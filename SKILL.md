@@ -33,7 +33,7 @@ If a named capability is unavailable, state the fallback and preserve the same e
 
 Resolve the source and an existing paper-reader web project. Use the site path supplied by the user; otherwise search the current workspace for the architecture in the project contract. If multiple plausible projects remain, ask before editing.
 
-Derive a stable slug, search for prior work, and resume rather than duplicate. Create the progress file specified by the project contract. Register truthful metadata with `status: "reading"`; replace at most one appropriate example card. Publish an intermediate state only when processing spans multiple turns and the user benefits from seeing progress.
+Derive a stable slug, search for prior work, and resume rather than duplicate. Create the progress file specified by the project contract. Register truthful metadata with `status: "reading"`, an explicit high-level `collection`, and structured `publication` evidence. Name a conference or journal only when acceptance is confirmed by an official venue, publisher, or paper record; label workshop papers as workshops, and use `arXiv` preprint status for unconfirmed or under-review work. Add optional `codeUrl` only when the paper, author project page, or official research organization identifies the repository; omit it rather than guessing or linking a third-party reproduction. Reuse an existing collection when justified, otherwise use `uncategorized`. Never infer `world-models` merely because the current library began with that topic. Replace at most one appropriate example card. Publish an intermediate state only when processing spans multiple turns and the user benefits from seeing progress.
 
 ### 2. Build a source map
 
@@ -45,11 +45,11 @@ Create `PaperSection[]` with stable IDs, block kinds, verbatim English, meaning-
 
 ### 4. Write the report
 
-Follow the report contract exactly: 13 numbered chapters, evidence-bound conclusions, fact/evaluation separation, five research directions, and 10 answered reading-check questions. Label unsupported analysis `这是推断`; use `不确定` when evidence is insufficient.
+Follow the report contract exactly: 13 numbered chapters, evidence-bound conclusions, fact/evaluation separation, plain-language `导师解读` after every substantive subsection, five research directions, and 10 answered reading-check questions. Each mentor paragraph must explain what the subsection is doing, the causal sequence, why the design is necessary, and the practical consequence instead of paraphrasing the preceding prose. Label unsupported analysis `这是推断`; use `不确定` when evidence is insufficient.
 
 ### 5. Add the reader route
 
-Store the paper-specific PDF, extracted figures, and typed data; create `/papers/<slug>`; update the registry; retain the existing reader design and accessible typography; and link back to `/`. Generalize shared reader metadata if another paper's identity, PDF path, figure base path, or local-storage key remains hard-coded.
+Store the paper-specific PDF, extracted figures, and typed data; create `/papers/<slug>`; update the registry; retain the existing reader design and accessible typography; and link back to the paper's collection page. When introducing an intentional new research theme, add its collection definition and `/collections/<collection>` route; uncertain classifications stay in `uncategorized`. Generalize shared reader metadata if another paper's identity, PDF path, figure base path, or local-storage key remains hard-coded.
 
 ### 6. Validate and publish
 

@@ -22,7 +22,7 @@ For each paper, the workflow produces:
   tables, appendices, and references;
 - aligned English source blocks and meaning-preserving Chinese translation;
 - original paper figures and tables placed beside the relevant discussion;
-- a fixed 13-chapter Chinese close-reading report;
+- a fixed 13-chapter Chinese close-reading report with plain-language mentor explanations after substantive subsections;
 - exactly five research directions and 10 answered reading-check questions;
 - a resumable processing record and deterministic structural validation;
 - optionally, a paper card and reader route in an existing web library.
@@ -63,7 +63,9 @@ stable evidence IDs throughout.
 Next, it teaches the paper in a fixed 13-chapter report: background, problem
 definition, method, formulas, experiments, cost, real contributions, related
 work, reproduction, research ideas, and reading-check questions. Paper facts,
-evaluation, inference, and uncertainty stay visibly separate.
+evaluation, inference, and uncertainty stay visibly separate. Every substantive
+subsection ends with a concise mentor explanation of what the section is doing,
+how its steps connect, and why the design is needed.
 
 Finally, it adds the PDF, figures, bilingual content, report, route, and library
 card to an existing web reader. Structural checks, a production build, and
@@ -138,6 +140,47 @@ requires the agent to disclose the fallback and preserve the evidence contract.
 7. **Verify and publish** — Run structural checks, tests, production build, and
    visual QA; deploy only when the target project already has an approved
    hosting path.
+
+## Collection-aware libraries
+
+Every paper registry entry must name one high-level `collection`. Collections
+are independent shelves such as `world-models`, `medical-ai`, or `agents`;
+multi-valued `domains` remain filters inside a shelf.
+
+Reuse an existing collection only when the paper belongs there. If the topic is
+genuinely unclear, register the paper as `uncategorized` for later review.
+Never default a new paper to `world-models` merely because the first papers in a
+library happened to use that topic. A deliberate new theme should receive a
+collection definition and a `/collections/<collection>` route.
+
+## Verified publication labels
+
+Every paper card should state where the work was published or accepted. Use an
+official venue, publisher, or paper record as evidence. Workshop papers must be
+labeled as workshops and must not be presented as main-track papers. If no
+acceptance can be confirmed—or the paper is only under review—display it as an
+`arXiv` preprint instead of guessing a venue.
+
+Store this as structured `publication` metadata (`kind`, `status`, `venue`,
+`year`, and evidence `url`). Use an optional note when the accepted version has
+a materially different title from the current preprint.
+
+Official code links are optional. Add `codeUrl` only when the paper, an author
+project page, or the official research organization identifies the repository.
+If that evidence is missing, omit the button entirely—never guess from a
+same-name repository or link a third-party reproduction.
+
+## Personal reading marks
+
+For readers that support an “already read” card flip, keep the user's reading
+mark separate from processing status: a report can be fully generated without
+having been read. A completion back face may use a checkmark seal and a reversible
+flip action. Preserve existing marks when adding papers, and explain that
+browser-local storage does not synchronize between devices. Respect keyboard
+navigation and reduced-motion settings.
+
+This repository supplies the ingestion skill and integration contracts, not a
+standalone copy of a user's deployed website or private paper library.
 
 ## What's Inside
 

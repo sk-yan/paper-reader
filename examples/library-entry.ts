@@ -1,10 +1,18 @@
 export const examplePaper = {
   slug: "example-paper",
+  collection: "world-models",
   titleEn: "Example Paper Title",
   titleZh: "示例论文标题",
   authors: "First Author et al.",
   year: 2026,
   domains: ["Agents", "World Models"],
+  publication: {
+    kind: "preprint" as const,
+    status: "preprint" as const,
+    venue: "arXiv",
+    year: 2026,
+    url: "https://arxiv.org/abs/0000.00000",
+  },
   status: "reading" as const,
   progress: 45,
   stage: "英文原文与中文逐段对齐",

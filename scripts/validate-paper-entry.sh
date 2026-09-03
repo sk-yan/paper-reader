@@ -37,6 +37,66 @@ if ! grep -Eq "slug:[[:space:]]*[\"']$SLUG[\"']" "$SITE_ROOT/app/data/library.ts
 fi
 pass "registry entry"
 
+python3 - "$SITE_ROOT/app/data/library.ts" "$SLUG" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1]).read_text(encoding="utf-8")
+slug = sys.argv[2]
+slug_match = re.search(rf"slug:\s*[\"']{re.escape(slug)}[\"']", source)
+if slug_match is None:
+    raise SystemExit(f"FAIL: registry has no slug: {sys.argv[2]}")
+
+start = source.rfind("{", 0, slug_match.start())
+if start < 0:
+    raise SystemExit(f"FAIL: cannot parse registry entry: {slug}")
+
+depth = 0
+quote = None
+escaped = False
+end = None
+for index, char in enumerate(source[start:], start=start):
+    if quote:
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == quote:
+            quote = None
+        continue
+    if char in {"\"", "'", "`"}:
+        quote = char
+    elif char == "{":
+        depth += 1
+    elif char == "}":
+        depth -= 1
+        if depth == 0:
+            end = index + 1
+            break
+
+if end is None:
+    raise SystemExit(f"FAIL: cannot parse registry entry: {slug}")
+entry = source[start:end]
+
+if not re.search(r"collection:\s*[\"'][^\"']+[\"']", entry):
+    raise SystemExit(
+        f"FAIL: registry entry has no explicit collection: {sys.argv[2]}"
+    )
+publication = re.search(r"publication:\s*\{(?P<body>.*?)\n\s*\}", entry, re.DOTALL)
+if publication is None:
+    raise SystemExit(
+        f"FAIL: registry entry has no explicit publication: {sys.argv[2]}"
+    )
+body = publication.group("body")
+for field in ("kind", "status", "venue", "year", "url"):
+    if not re.search(rf"\b{field}\s*:", body):
+        raise SystemExit(
+            f"FAIL: publication metadata missing {field}: {sys.argv[2]}"
+        )
+PY
+pass "explicit collection and publication assignment"
+
 ROUTE_FILE="$SITE_ROOT/app/papers/$SLUG/page.tsx"
 
 [ -f "$ROUTE_FILE" ] || fail "missing reader route: $ROUTE_FILE"

@@ -12,6 +12,25 @@
 - Do not turn the report into an expanded abstract. Teach the paper from global understanding to mechanisms, evidence, critique, and transfer.
 - Preserve narrow claims: prediction quality is not automatically planning quality; confidence is not automatically calibration; engineering integration is not automatically a new learning principle.
 
+## Mentor interpretation rule
+
+After every substantive method, formula/algorithm, experiment, cost, critique, comparison, reproduction, or research-direction subsection, add one standalone block:
+
+```markdown
+> **导师解读**：这一节是在做……首先……然后……之所以这样设计，是因为……
+```
+
+The paragraph must use original, plain Chinese; state what the subsection does and which problem it resolves; explain the causal order and why the steps are necessary; and make the practical consequence clear. Keep paper facts separate from analysis and label any unsupported extension `这是推断`.
+
+One mentor block may summarize a tightly connected group of short paragraphs or equations. Do not mechanically repeat one after every bullet, table row, or reading-check answer. The goal is conceptual teaching, not duplicated text.
+
+When retrofitting an existing library, audit every registered report rather
+than updating only the example paper. If notes are composed programmatically,
+verify the final rendered Markdown still has all 13 chapter headings, preserve
+blank lines before the next heading, and ensure repeated composition is
+idempotent. Count checks are structural only: manually verify that each note
+explains the corresponding subsection and is grounded in the paper.
+
 ## Required opening
 
 Start with:
@@ -186,4 +205,4 @@ Questions must test understanding rather than recall of section titles.
 - Strongest positive and strongest cautionary result are both reported.
 - All uncertain or inferred statements are labeled.
 - No chapter is empty or generic.
-
+- Every substantive subsection ends with a non-redundant `导师解读` block.
