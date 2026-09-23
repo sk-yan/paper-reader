@@ -16,6 +16,7 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { paperMathOptions, rehypePaperMathCompatibility } from "../lib/math-options";
+import { blockColumns } from "../lib/equation-blocks";
 import {
   PaperImageLightbox,
   type LightboxImage,
@@ -161,11 +162,13 @@ function PaperBlockView({
   onOpenImage: (image: LightboxImage) => void;
 }) {
   const imageSrc = block.imageSrc ? withBasePath(block.imageSrc) : undefined;
+  const columns = blockColumns(block, mode);
+  const singleColumn = !columns.english || !columns.chinese;
   return (
     <article
       className={`paper-block paper-block--${block.kind}${
-        pinned ? " is-pinned" : ""
-      }${flash ? " is-flashing" : ""}`}
+        singleColumn ? " is-single-column" : ""
+      }${pinned ? " is-pinned" : ""}${flash ? " is-flashing" : ""}`}
       data-block-id={block.id}
       id={block.id}
       onClick={() => onPin(block.id)}
@@ -190,14 +193,14 @@ function PaperBlockView({
           <img alt={block.imageAlt || block.label || ""} src={imageSrc} />
         </button>
       )}
-      {mode !== "chinese" && (
+      {columns.english !== null && (
         <div className="paper-block__en" lang="en">
-          <Markdown>{block.english}</Markdown>
+          <Markdown>{columns.english}</Markdown>
         </div>
       )}
-      {mode !== "english" && (
+      {columns.chinese !== null && (
         <div className="paper-block__zh" lang="zh-CN">
-          <Markdown>{block.chinese}</Markdown>
+          <Markdown>{columns.chinese}</Markdown>
         </div>
       )}
     </article>

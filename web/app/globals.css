@@ -618,6 +618,33 @@ kbd {
   background: #efeee8;
 }
 
+/* A display equation is language-neutral, and an `equation` block usually
+   repeats the same formula in both columns. In parallel mode such a block
+   renders a single column, so the formula is drawn once across the full width
+   instead of twice in half-width cells, where two wide formulas left their
+   cells and collided across the divider. */
+.paper-block.is-single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.paper-block.is-single-column::after {
+  display: none;
+}
+
+/* Safety net: KaTeX display math is `white-space: nowrap`, so a formula wider
+   than its column would leak out of the block rather than scroll inside it.
+   `min-width: max-content` keeps both ends of a centred overflow reachable. */
+.paper-block .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+
+.paper-block .katex-display > .katex {
+  min-width: max-content;
+}
+
 .paper-block--figure-caption .markdown {
   color: var(--muted);
   font-size: 13px;
