@@ -12,6 +12,22 @@
 - Do not turn the report into an expanded abstract. Teach the paper from global understanding to mechanisms, evidence, critique, and transfer.
 - Preserve narrow claims: prediction quality is not automatically planning quality; confidence is not automatically calibration; engineering integration is not automatically a new learning principle.
 
+## Math in the report
+
+Formulas are evidence, so a formula that renders wrong invalidates the paragraph
+that cites it. KaTeX does not error on these mistakes — it silently prints the
+LaTeX control words.
+
+- Escape LaTeX exactly once. Inside a string literal `\mathrm` is `\\mathrm`;
+  `\\\\mathrm` reaches KaTeX as a line break plus the literal word `mathrm`.
+- Never put `\\` inside `$...$`, or inside a display formula that is not a
+  multi-line environment (`aligned`, `cases`, `array`, `matrix`). It becomes an
+  invisible line break and displaces the rest of the formula.
+- Keep formulas to the KaTeX subset and add missing package commands as macros
+  in the site's `app/lib/math-options.ts` rather than changing the notation.
+- Verify by rendering, not by reading: see the formula contract in
+  `web-reader-contract.md`. A stray `\\` survives every structural check.
+
 ## Mentor interpretation rule
 
 After every substantive method, formula/algorithm, experiment, cost, critique, comparison, reproduction, or research-direction subsection, add one standalone block:

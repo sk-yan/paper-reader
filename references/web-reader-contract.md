@@ -190,6 +190,45 @@ Required invariants:
 - evidence keys are stable targets for report jumps;
 - all main sections are present.
 
+## Formula contract
+
+KaTeX only reports a formula it cannot parse. A formula can be valid LaTeX and
+still reach the page as visible garbage, so a green build does not prove the
+formulas render. Verify formulas by rendering them, never by reading the source.
+
+- **Escape LaTeX exactly once.** Inside a JavaScript or JSON string literal,
+  `\mathrm` is written `\\mathrm`. Writing `\\\\mathrm` hands KaTeX `\\mathrm`,
+  which is a line break followed by the literal word `mathrm` — the page then
+  shows `RmathrmLLM` where `R_{\mathrm{LLM}}` was intended. `\hat` becomes
+  `hat`, `\{` becomes a stray brace. Re-serialising an already escaped payload
+  (writing the JSON, then embedding that JSON string in another string) is the
+  usual cause. Check the value at runtime, not in the file.
+- **Stay inside the KaTeX subset.** Map extra package commands as macros in
+  `app/lib/math-options.ts` (the reader already maps `\mathds`, `\nicefrac` and
+  `\textsc`). Never rewrite the paper's notation to work around a renderer.
+- **Render an equation once.** A formula is language-neutral, so an `equation`
+  block repeats it in both language columns and the reader would draw the same
+  equation twice. In parallel mode `blockColumns()` in
+  `app/lib/equation-blocks.ts` collapses such a block to one column.
+  Display math cannot wrap, so two copies of one formula overflow their
+  half-width cells and collide across the divider — and subtracting the formula
+  from the Chinese column is not enough, because a label written *before* the
+  formula (`公式（符号保持不变）：`) then strands below it. The collapsed column is
+  the one that carries the block's prose, so nothing is lost: the English column
+  when the Chinese column only repeats the formula, otherwise the Chinese column
+  with the formula drawn once. Single-language modes keep the full text. Do not
+  reintroduce a second copy.
+- **Keep display math inside its block.** KaTeX display math is
+  `white-space: nowrap` and cannot wrap, so a wide formula overflows whatever
+  contains it. `.paper-block .katex-display` scrolls horizontally for this
+  reason — keep that rule — and prefer `\begin{aligned}` over one very long line.
+- **Ship the render audit.** Keep `app/lib/math-lint.ts` and
+  `app/lib/math-lint.test.ts` in place, and carry the same audit into a new
+  reader site. The test renders every stored formula in every paper through the
+  real pipeline and fails on parse errors, a stray `\\`, a command name missing
+  its backslash, and unbalanced `$$`. It replaces any per-paper check that only
+  looks for `katex-error`, which cannot see any of these failures.
+
 ## Figure and table contract
 
 - Extract figures and tables from the source PDF at readable resolution.

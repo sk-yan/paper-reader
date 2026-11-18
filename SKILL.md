@@ -61,6 +61,8 @@ bash scripts/validate-paper-entry.sh "<site-root>" "<slug>"
 
 Run the site's full tests and production build, then visually inspect the library card, bilingual blocks, formulas, figure placement, report navigation, and PDF link.
 
+Formula rendering is part of validation, not an optional extra: run the library-wide math render audit (`app/lib/math-lint.test.ts`) that ships with the site. KaTeX accepts a formula whose escaping was doubled and then prints its control sequences as prose, so a passing build and a clean `katex-error` check do not prove the page is readable. Follow the formula contract in `references/web-reader-contract.md`.
+
 When hosting is configured, commit and push the exact validated source, package that commit, save one version, deploy with the intended access level, and poll to a terminal success state. Never create a second hosting project when a valid project ID already exists.
 
 ### 7. Handoff
