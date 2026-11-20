@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "katex/dist/katex.min.css";
 import "./globals.css";
+import "./catalogue.css";
 import { withBasePath } from "./lib/site-url";
 
 export const metadata: Metadata = {

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { PaperLibraryApp } from "../../components/PaperLibraryApp";
+import { PaperIndexApp } from "../../components/PaperIndexApp";
 import { paperCollections } from "../../data/collections";
 import { libraryPapers } from "../../data/library";
-import { papersForCollection } from "../../lib/collections";
 
 const collection = paperCollections.find(
   (item) => item.slug === "world-models",
@@ -14,13 +13,11 @@ export const metadata: Metadata = {
 };
 
 export default function WorldModelsCollectionPage() {
-  const papers = papersForCollection(libraryPapers, "world-models");
-
   return (
-    <PaperLibraryApp
-      backHref="/"
-      collection={collection}
-      papers={papers}
+    <PaperIndexApp
+      initialCollection={collection.slug}
+      collections={paperCollections}
+      papers={libraryPapers}
     />
   );
 }

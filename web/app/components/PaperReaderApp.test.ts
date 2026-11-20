@@ -3,6 +3,16 @@ import { describe, expect, it } from "vitest";
 import { teachAndGrowMentoredReportMarkdown } from "../data/papers/teach-and-grow/report";
 
 describe("PaperReaderApp image lightbox integration", () => {
+  it("opens the mentor report by default and preserves source bookmark handling", () => {
+    const source = readFileSync("app/components/PaperReaderApp.tsx", "utf8");
+    expect(source).toContain('useState<ReaderView>("report")');
+    expect(source).toContain('aria-label="阅读模式"');
+    expect(source).toContain('window.addEventListener("hashchange", followHash)');
+    expect(source).toContain('setReaderView(isReport ? "report" : "paper")');
+    expect(source).toContain("if (!stateLoaded) return;");
+    expect(source).not.toContain('import Link from "next/link"');
+    expect(source).toContain('href={withBasePath("/")}');
+  });
   it("connects report Markdown images to the same accessible lightbox", () => {
     const source = readFileSync("app/components/PaperReaderApp.tsx", "utf8");
     expect(source).toContain("img: ({ src, alt })");

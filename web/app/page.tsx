@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { CollectionLandingApp } from "./components/CollectionLandingApp";
+import { PaperIndexApp } from "./components/PaperIndexApp";
 import { paperCollections } from "./data/collections";
 import { libraryPapers } from "./data/library";
-import { summarizeNonEmptyCollections } from "./lib/collections";
-import { countPapersByStatus } from "./lib/library";
 
 export const metadata: Metadata = {
   title: "Paper Atlas · 论文精读库",
@@ -12,11 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  const collections = summarizeNonEmptyCollections(
-    paperCollections,
-    libraryPapers,
-  );
-  const counts = countPapersByStatus(libraryPapers);
-
-  return <CollectionLandingApp collections={collections} counts={counts} />;
+  return <PaperIndexApp collections={paperCollections} papers={libraryPapers} />;
 }

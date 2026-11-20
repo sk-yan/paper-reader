@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
 } from "react";
-import Link from "next/link";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
@@ -58,6 +57,7 @@ type Props = {
 };
 
 type MobilePane = "paper" | "report";
+type ReaderView = MobilePane | "split";
 
 const STORAGE_KEY = "worldevolver-reader:v1";
 
@@ -295,7 +295,9 @@ export function PaperReaderApp({
   const [activeReportSection, setActiveReportSection] = useState("report-1");
   const [pinnedBlock, setPinnedBlock] = useState("");
   const [flashBlock, setFlashBlock] = useState("");
-  const [mobilePane, setMobilePane] = useState<MobilePane>("paper");
+  const [mobilePane, setMobilePane] = useState<MobilePane>("report");
+  const [readerView, setReaderView] = useState<ReaderView>("report");
+  const [stateLoaded, setStateLoaded] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [progress, setProgress] = useState(0);
@@ -346,19 +348,21 @@ export function PaperReaderApp({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const state = parseReadingState(
-        localStorage.getItem(`${STORAGE_KEY}:${paperMeta.slug}`),
-      );
+      let state = DEFAULT_READING_STATE;
+      try { state = parseReadingState(localStorage.getItem(`${STORAGE_KEY}:${paperMeta.slug}`)); }
+      catch { /* Storage may be unavailable in privacy modes. */ }
       setSplitPercent(state.splitPercent);
       setLanguageMode(state.languageMode);
       setCollapsedSections(state.collapsedSections);
       setPinnedBlock(state.paperBlockId);
       setActiveReportSection(state.reportSectionId);
+      setStateLoaded(true);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [paperMeta.slug]);
 
   useEffect(() => {
+    if (!stateLoaded) return;
     try {
       localStorage.setItem(
         `${STORAGE_KEY}:${paperMeta.slug}`,
@@ -380,7 +384,33 @@ export function PaperReaderApp({
     pinnedBlock,
     paperMeta.slug,
     splitPercent,
+    stateLoaded,
   ]);
+
+  // Existing source/report bookmarks must reveal the correct pane, even though
+  // new visits now start with the report. Also handles browser back/forward.
+  useEffect(() => {
+    if (!stateLoaded) return;
+    let timer: number;
+    const followHash = () => {
+      window.clearTimeout(timer);
+      let target: string;
+      try { target = decodeURIComponent(window.location.hash.slice(1)); }
+      catch { return; }
+      if (!target) return;
+      const sectionId = blockToSection.get(target) ??
+        sections.find((section) => `paper-section-${section.id}` === target)?.id;
+      const isReport = reportSections.some((section) => section.id === target);
+      if (!sectionId && !isReport) return;
+      setReaderView(isReport ? "report" : "paper");
+      setMobilePane(isReport ? "report" : "paper");
+      if (sectionId) setCollapsedSections((current) => current.filter((id) => id !== sectionId));
+      timer = window.setTimeout(() => document.getElementById(target)?.scrollIntoView({ block: "start" }), 80);
+    };
+    followHash();
+    window.addEventListener("hashchange", followHash);
+    return () => { window.clearTimeout(timer); window.removeEventListener("hashchange", followHash); };
+  }, [stateLoaded, blockToSection, sections, reportSections]);
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -456,6 +486,7 @@ export function PaperReaderApp({
     const sectionId = blockToSection.get(target);
     if (sectionId) setCollapsed(sectionId, false);
     setMobilePane("paper");
+    setReaderView((current) => current === "split" ? current : "paper");
     setFlashBlock(target);
     window.setTimeout(() => {
       document.getElementById(target)?.scrollIntoView({
@@ -470,6 +501,7 @@ export function PaperReaderApp({
   const jumpToPaperSection = (sectionId: string) => {
     setCollapsed(sectionId, false);
     setMobilePane("paper");
+    setReaderView((current) => current === "split" ? current : "paper");
     window.setTimeout(() => {
       document
         .getElementById(`paper-section-${sectionId}`)
@@ -479,12 +511,14 @@ export function PaperReaderApp({
 
   const jumpToReport = (sectionId: string) => {
     setMobilePane("report");
+    setReaderView((current) => current === "split" ? current : "report");
     setActiveReportSection(sectionId);
     window.setTimeout(() => {
       document.getElementById(sectionId)?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
+      window.history.replaceState(null, "", `#${sectionId}`);
     }, 40);
   };
 
@@ -523,19 +557,19 @@ export function PaperReaderApp({
   };
 
   return (
-    <main className="reader-app">
+    <main className="reader-app reader-app--article" data-reader-view={readerView}>
       <header className="topbar">
-        <Link
+        <a
           aria-label="返回论文精读库"
           className="brand"
-          href="/"
+          href={withBasePath("/")}
         >
           <span className="brand__mark">←</span>
           <span className="brand__copy">
-            <strong>返回 Paper Atlas</strong>
+            <strong>全部论文</strong>
             <small>{paperMeta.readerLabel}</small>
           </span>
-        </Link>
+        </a>
 
         <nav className="topbar__nav" aria-label="阅读导航">
           <button onClick={() => jumpToPaper("abstract")} type="button">
@@ -553,7 +587,7 @@ export function PaperReaderApp({
         </nav>
 
         <div className="topbar__actions">
-          <div className="mode-control" aria-label="语言显示模式">
+          {readerView !== "report" && <div className="mode-control" aria-label="语言显示模式">
             {(
               [
                 ["parallel", "对照"],
@@ -571,7 +605,7 @@ export function PaperReaderApp({
                 {label}
               </button>
             ))}
-          </div>
+          </div>}
           <button
             aria-label="搜索论文和报告"
             className="search-trigger"
@@ -580,29 +614,23 @@ export function PaperReaderApp({
           >
             搜索 <kbd>⌘K</kbd>
           </button>
-          <div className="progress-label" aria-label={`论文阅读进度 ${progress}%`}>
+          <div className="progress-label" aria-label={`当前阅读进度 ${progress}%`}>
             <span style={{ "--progress": `${progress}%` } as React.CSSProperties} />
             {progress}%
           </div>
         </div>
       </header>
 
-      <div className="mobile-switch" aria-label="移动端阅读区域">
-        <button
-          className={mobilePane === "paper" ? "is-active" : ""}
-          onClick={() => setMobilePane("paper")}
-          type="button"
-        >
-          论文 · 中英对照
-        </button>
-        <button
-          className={mobilePane === "report" ? "is-active" : ""}
-          onClick={() => setMobilePane("report")}
-          type="button"
-        >
-          精读报告
-        </button>
-      </div>
+      <nav className="reading-view-control" aria-label="阅读模式">
+        {([["report", "导师精读"], ["paper", "原文 / 翻译"], ["split", "双栏对照"]] as const).map(([value, label]) => (
+          <button key={value} className={`reading-view-${value}`} type="button"
+            aria-pressed={readerView === value}
+            onClick={() => { setReaderView(value); if (value !== "split") setMobilePane(value); }}>
+            {label}
+          </button>
+        ))}
+        <a href={withBasePath(paperMeta.pdfHref)} target="_blank" rel="noreferrer">官方原文 / PDF ↗</a>
+      </nav>
 
       <section
         className="reader-shell"
@@ -642,7 +670,7 @@ export function PaperReaderApp({
               onScroll={(event) => {
                 const element = event.currentTarget;
                 const max = element.scrollHeight - element.clientHeight;
-                setProgress(max > 0 ? Math.round((element.scrollTop / max) * 100) : 0);
+                if (readerView !== "report") setProgress(max > 0 ? Math.round((element.scrollTop / max) * 100) : 0);
               }}
               ref={paperScrollRef}
             >
@@ -780,13 +808,29 @@ export function PaperReaderApp({
                 key={section.id}
                 onClick={() => jumpToReport(section.id)}
                 title={section.title}
+                aria-label={`${section.number}. ${section.title}`}
+                aria-current={activeReportSection === section.id ? "location" : undefined}
                 type="button"
               >
-                {section.number.padStart(2, "0")}
+                <span>{section.number.padStart(2, "0")}</span><span className="report-toc-title">{section.title}</span>
               </button>
             ))}
           </div>
-          <div className="report-scroll" ref={reportScrollRef}>
+          <div className="report-scroll" ref={reportScrollRef} onScroll={(event) => {
+            if (readerView === "paper") return;
+            const element = event.currentTarget;
+            const max = element.scrollHeight - element.clientHeight;
+            setProgress(max > 0 ? Math.round((element.scrollTop / max) * 100) : 0);
+          }}>
+            <header className="report-article-heading">
+              <p className="eyebrow">PAPER ATLAS / 导师精读</p>
+              <h1>{paperMeta.title}</h1>
+              {libraryPaper ? <p>{libraryPaper.titleZh}</p> : null}
+              <div className="reader-resources">
+                {publication ? <a className="reader-publication" href={publication.url} target="_blank" rel="noreferrer">{formatPublicationLabel(publication)}</a> : null}
+                {libraryPaper?.codeUrl ? <a className="reader-code-link" href={libraryPaper.codeUrl} target="_blank" rel="noreferrer">GitHub ↗</a> : null}
+              </div>
+            </header>
               <ReportContent
                 onOpenImage={setActiveImage}
               evidenceTargets={evidenceTargets}

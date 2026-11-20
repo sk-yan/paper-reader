@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { PaperLibraryApp } from "../../components/PaperLibraryApp";
+import { PaperIndexApp } from "../../components/PaperIndexApp";
 import { paperCollections } from "../../data/collections";
 import { libraryPapers } from "../../data/library";
-import { papersForCollection } from "../../lib/collections";
 
 const collection = paperCollections.find(item => item.slug === "latent-reasoning")!;
 
@@ -12,6 +11,6 @@ export const metadata: Metadata = {
 };
 
 export default function LatentReasoningCollectionPage() {
-  return <PaperLibraryApp backHref="/" collection={collection}
-    papers={papersForCollection(libraryPapers, "latent-reasoning")} />;
+  return <PaperIndexApp initialCollection={collection.slug} collections={paperCollections}
+    papers={libraryPapers} />;
 }

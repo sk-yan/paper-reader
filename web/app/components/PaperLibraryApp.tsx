@@ -48,7 +48,7 @@ const filterLabels: Record<LibraryFilter, string> = {
   queued: "待读",
 };
 
-function PaperCard({
+export function PaperCard({
   paper,
   index,
   isRead,
@@ -70,6 +70,7 @@ function PaperCard({
       <div className="library-card__inner">
         <section
           aria-hidden={isRead}
+          inert={isRead}
           className="library-card__face library-card__face--front"
         >
           <div className="library-card__topline">
@@ -161,6 +162,7 @@ function PaperCard({
 
         <section
           aria-hidden={!isRead}
+          inert={!isRead}
           className="library-card__face library-card__face--back"
         >
           <div className="library-card__back-topline">
