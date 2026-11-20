@@ -29,6 +29,7 @@ export type PaperCollection = {
   accent: "cobalt" | "vermilion" | "moss" | "ochre";
   order: number;
   showWhenEmpty?: boolean;
+  archived?: boolean;
 };
 
 export type LibraryPaper = {

@@ -22,6 +22,7 @@ export function summarizeNonEmptyCollections(
   papers: LibraryPaper[],
 ): CollectionSummary[] {
   return collections
+    .filter((collection) => !collection.archived)
     .map((collection) => {
       const matches = papersForCollection(papers, collection.slug);
 

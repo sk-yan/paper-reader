@@ -19,6 +19,16 @@ Pages构建使用 `PAPER_ATLAS_STATIC_EXPORT=1` 和 `NEXT_PUBLIC_BASE_PATH=/pape
 
 ## 内容结构
 
+### 当前关注方向与每日发现计划
+
+关注配置见 `app/data/research-focus.ts`：世界模型、机器人、Agent Memory、RSI（Recursive Self-Improvement，递归自我改进）、世界动作模型（World–Action Models）。该文件记录标签和检索关键词，**每日抓取与自动推荐尚未实现或启用**，修改关键词不会自动创建定时任务。
+
+后续计划是自动发现候选 → 用户选择 → 在 Codex 中核对全文并完成精读。候选不得标记为“精读已完成”；按论文 ID 去重，跨方向仅增加标签，不重复收录。RSI/WAM 等缩写需结合标题、摘要判断，不能单凭缩写命中。
+
+Latent Reasoning 已停止关注并归档：首页不再推荐该主题，但旧路由、已有内容与“全部论文”中的历史记录保留。关注标签不同于存档书架，现有论文不会因这次兴趣调整被重新分类。
+
+### 文件位置
+
 - `app/data/library.ts`：论文卡片、主题、经核对的发表信息与官方代码链接。
 - `app/data/papers/<slug>/paper.ts`：双语内容；许可未明确允许转载的论文为来源说明。
 - `app/data/papers/<slug>/report.ts`：导师报告与证据定位。

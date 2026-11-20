@@ -7,6 +7,7 @@ import { READ_PAPERS_STORAGE_KEY, parseReadPapers, serializeReadPapers, toggleRe
 import { withBasePath } from "../lib/site-url";
 import { PaperCard } from "./PaperLibraryApp";
 import { CreatePaperDialog } from "./CreatePaperDialog";
+import { researchFocus } from "../data/research-focus";
 
 const statusLabels = { completed: "精读已完成", reading: "精读中", queued: "待读" };
 
@@ -57,14 +58,15 @@ export function PaperIndexApp({ papers, collections, initialCollection = "all" }
       <div className="index-container">
         <section className="index-heading">
           <div><p className="index-eyebrow">READING NOTES / 研究笔记</p><h1>论文精读<span>从问题读到方法，从结果读到边界。</span></h1>
-            <p>逐篇整理方法、图表、实验和导师解读。选一篇，直接开始读。</p></div>
+            <p>逐篇整理方法、图表、实验和导师解读。选一篇，直接开始读。</p>
+            <p aria-label="当前关注方向">关注：{researchFocus.map((topic) => topic.label).join(" · ")}</p></div>
           <button className="index-add" type="button" onClick={() => setIsCreateOpen(true)}>＋ 添加论文</button>
         </section>
         <section className="index-controls" aria-label="论文检索与筛选">
           <label className="index-search"><span>搜索论文</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="标题、作者、方法或关键词…" /></label>
           <div className="index-topics" role="group" aria-label="按主题筛选">
             <button type="button" aria-pressed={collection === "all"} onClick={() => setCollection("all")}>全部主题 <small>{papers.length}</small></button>
-            {collections.map((item) => <button type="button" key={item.slug} aria-pressed={collection === item.slug} onClick={() => setCollection(item.slug)}>{item.titleZh} <small>{papers.filter((paper) => paper.collection === item.slug).length}</small></button>)}
+            {collections.filter((item) => !item.archived || collection === item.slug).map((item) => <button type="button" key={item.slug} aria-pressed={collection === item.slug} onClick={() => setCollection(item.slug)}>{item.titleZh}{item.archived ? "（已归档）" : ""} <small>{papers.filter((paper) => paper.collection === item.slug).length}</small></button>)}
           </div>
           <div className="index-options">
             <label>制作状态<select value={status} onChange={(event) => setStatus(event.target.value as LibraryFilter)}><option value="all">全部状态</option>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
@@ -72,6 +74,7 @@ export function PaperIndexApp({ papers, collections, initialCollection = "all" }
             <div className="index-view" role="group" aria-label="目录显示方式"><button type="button" aria-pressed={view === "list"} onClick={() => setView("list")}>列表</button><button type="button" aria-pressed={view === "cards"} onClick={() => setView("cards")}>翻转卡片</button></div>
           </div>
         </section>
+        {selectedCollection?.archived ? <p>此主题已停止关注，历史内容与原链接保留，不纳入后续每日推荐。</p> : null}
         <div className="index-results"><p role="status">{selectedCollection?.titleZh || "全部论文"} · {visible.length} 篇<span>按最近更新排序</span></p><small>{storageUnavailable ? "无法保存到浏览器，已读标记仅在本次页面有效。" : "已读标记仅保存在当前浏览器。"}</small></div>
         <section id="paper-list" aria-label="论文列表" tabIndex={-1}>
           {!visible.length ? <div className="index-empty"><h2>{selectedCollection && !papers.some((paper) => paper.collection === collection) ? "这个主题还没有论文" : "没有找到符合条件的论文"}</h2><p>可以调整筛选，或回到 Codex 聊天添加下一篇。</p><button type="button" onClick={clear}>查看全部论文</button></div>

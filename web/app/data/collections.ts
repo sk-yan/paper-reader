@@ -20,6 +20,6 @@ export const paperCollections: PaperCollection[] = [
     eyebrow: "LATENT REASONING · CONTINUOUS THOUGHT · HIDDEN STATES",
     accent: "moss",
     order: 2,
-    showWhenEmpty: true,
+    archived: true,
   },
 ];

@@ -33,14 +33,15 @@ describe("paper collections", () => {
           accent: "moss" as const,
           order: 99,
         },
+        { slug: "new-topic", titleZh: "新主题", titleEn: "New Topic", description: "", eyebrow: "NEW", accent: "moss", order: 100, showWhenEmpty: true },
       ],
       libraryPapers,
     );
 
-    expect(summaries.map((item) => item.slug)).toEqual(["world-models", "latent-reasoning"]);
+    expect(summaries.map((item) => item.slug)).toEqual(["world-models", "new-topic"]);
     expect(summaries[1]).toMatchObject({
-      paperCount: 0, latestUpdate: "", href: "/collections/latent-reasoning",
-      titleEn: "Latent Reasoning", showWhenEmpty: true,
+      paperCount: 0, latestUpdate: "", href: "/collections/new-topic",
+      titleEn: "New Topic", showWhenEmpty: true,
     });
     expect(papersForCollection(libraryPapers, "latent-reasoning")).toEqual([]);
     expect(summaries[0]).toMatchObject({
