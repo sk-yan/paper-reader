@@ -8,7 +8,9 @@ const prefix='/paper-reader';
 const collectionRoutes=fs.readdirSync(path.join(root,'web/app/collections'),{withFileTypes:true})
   .filter(entry=>entry.isDirectory()&&fs.existsSync(path.join(root,'web/app/collections',entry.name,'page.tsx')))
   .map(entry=>`/collections/${entry.name}/`);
-const routes=['/',...collectionRoutes,...papers.map(p=>`/papers/${p.slug}/`)];
+const discoveryDates=fs.readdirSync(path.join(root,'web/app/data/discovery'))
+  .filter(name=>/^\d{4}-\d{2}-\d{2}\.json$/.test(name)).map(name=>name.slice(0,-5));
+const routes=['/','/discovery/',...discoveryDates.map(date=>`/discovery/${date}/`),...collectionRoutes,...papers.map(p=>`/papers/${p.slug}/`)];
 const errors=[];
 for(const route of routes){
   const file=path.join(output,route.slice(1),'index.html');

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PaperIndexApp } from "./components/PaperIndexApp";
 import { paperCollections } from "./data/collections";
 import { libraryPapers } from "./data/library";
+import { latestDiscoverySummary } from "./data/discovery";
 
 export const metadata: Metadata = {
   title: "Paper Atlas · 论文精读库",
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <PaperIndexApp collections={paperCollections} papers={libraryPapers} />;
+  return <PaperIndexApp collections={paperCollections} papers={libraryPapers} latestDiscovery={latestDiscoverySummary} />;
 }

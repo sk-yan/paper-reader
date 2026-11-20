@@ -11,10 +11,11 @@ import { researchFocus } from "../data/research-focus";
 
 const statusLabels = { completed: "精读已完成", reading: "精读中", queued: "待读" };
 
-export function PaperIndexApp({ papers, collections, initialCollection = "all" }: {
+export function PaperIndexApp({ papers, collections, initialCollection = "all", latestDiscovery }: {
   papers: LibraryPaper[];
   collections: PaperCollection[];
   initialCollection?: string;
+  latestDiscovery?: { date: string; candidateCount: number; updateCount: number };
 }) {
   const [query, setQuery] = useState("");
   const [collection, setCollection] = useState(initialCollection);
@@ -51,6 +52,7 @@ export function PaperIndexApp({ papers, collections, initialCollection = "all" }
         <a className="index-brand" href={withBasePath("/")}><b>PA</b><span>Paper Atlas<small>ShengKun Yan · 论文精读</small></span></a>
         <nav aria-label="主导航">
           <a href="https://sk-yan.github.io/">个人主页</a>
+          <a href={withBasePath("/discovery/")}>每日发现</a>
           <a aria-current="page" href={withBasePath("/")}>论文精读</a>
           <a href="https://github.com/sk-yan/paper-reader">GitHub ↗</a>
         </nav>
@@ -62,6 +64,7 @@ export function PaperIndexApp({ papers, collections, initialCollection = "all" }
             <p aria-label="当前关注方向">关注：{researchFocus.map((topic) => topic.label).join(" · ")}</p></div>
           <button className="index-add" type="button" onClick={() => setIsCreateOpen(true)}>＋ 添加论文</button>
         </section>
+        {latestDiscovery ? <aside className="discovery-entry" aria-label="最新每日发现"><a href={withBasePath(`/discovery/${latestDiscovery.date}/`)}>每日发现 · {latestDiscovery.date} →</a><span>{latestDiscovery.candidateCount} 篇新稿候选 · {latestDiscovery.updateCount} 篇旧稿更新 · 尚未完整精读</span></aside> : null}
         <section className="index-controls" aria-label="论文检索与筛选">
           <label className="index-search"><span>搜索论文</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="标题、作者、方法或关键词…" /></label>
           <div className="index-topics" role="group" aria-label="按主题筛选">

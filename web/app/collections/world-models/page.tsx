@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PaperIndexApp } from "../../components/PaperIndexApp";
 import { paperCollections } from "../../data/collections";
 import { libraryPapers } from "../../data/library";
+import { latestDiscoverySummary } from "../../data/discovery";
 
 const collection = paperCollections.find(
   (item) => item.slug === "world-models",
@@ -18,6 +19,7 @@ export default function WorldModelsCollectionPage() {
       initialCollection={collection.slug}
       collections={paperCollections}
       papers={libraryPapers}
+      latestDiscovery={latestDiscoverySummary}
     />
   );
 }
