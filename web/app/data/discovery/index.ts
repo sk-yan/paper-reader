@@ -1,9 +1,10 @@
 import firstDigest from "./2026-11-20.json";
 import november21 from "./2026-11-21.json";
+import november22 from "./2026-11-22.json";
 import type { DiscoveryDigest } from "../../lib/discovery";
 
 // Add future daily JSON imports here. New dates are statically exported.
-export const discoveryDigests: DiscoveryDigest[] = [firstDigest, november21]
+export const discoveryDigests: DiscoveryDigest[] = [firstDigest, november21, november22]
   .sort((a, b) => b.date.localeCompare(a.date));
 
 // Pass only this small teaser to the library's client component, not all reports.
