@@ -1,0 +1,834 @@
+{
+  "date": "2026-11-23",
+  "windowStart": "2026-11-19T19:00:00Z",
+  "windowEnd": "2026-11-23T15:57:00Z",
+  "summary": "11月23日公告补漏：34篇新发现候选、3篇旧稿更新。真实提交日期为11月19–20日，并非今日首发；优先关注机器人自改进与跨回合记忆评测。",
+  "priorities": [
+    {
+      "id": "2611.27689",
+      "label": "Embodied-Harness",
+      "reason": "冻结模型的机器人harness自改进，并报告多轮提升曲线。"
+    },
+    {
+      "id": "2611.26853",
+      "label": "LoCo-WAM",
+      "reason": "回合内训练视频LoRA，每回合重置；区别于跨回合记忆。"
+    },
+    {
+      "id": "2611.27166",
+      "label": "Mem-X",
+      "reason": "让后续导航必须利用历史，区分终点成功与记忆依赖。"
+    }
+  ],
+  "reportMarkdown": "## 今天先读这三篇\n\n**Embodied-Harness → LoCo-WAM → Mem-X。** 分别对应“冻结模型的机器人自改进”“回合内参数适应”和“跨回合记忆评测”，不是同一种自进化。\n\n本轮从11月23日官方公告中精选 **34篇不同的新发现候选**，另登记 **3篇旧稿版本更新**。这些稿件实际于11月19–20日提交或修订，今天才被本任务从新公告捕获；**不是声称它们在11月23日首发**。以下只做初筛，不计入已完成精读。\n\n## 1. Embodied-Harness：最贴近冻结权重的机器人自演化\n\nZhenxuan Fan、Zhuoya Wang、Yuqian Yuan 等；首次提交 2026-11-20 UTC，v1。[官方论文](https://arxiv.org/abs/2611.27689v1)\n\nActor执行，Reflector依据轨迹修订操作指导，长期经验跨尝试保留；两者模型权重冻结。论文§4.4确实给出0到4轮的提升：RoboTwin C2R从59.2%到82.4%。因此不能再把“操作域没人画过改进曲线”当作前提。[§3–4与Fig.6](https://arxiv.org/html/2611.27689v1#S4)\n\n**需要核查：** 有曲线不等于已排除任务顺序、额外尝试预算等解释。真机96.7%来自3任务共30次评估；本轮尚未确认独立进化种子和严格同预算对照的充分性。代码入口未确认，不猜仓库地址。\n\nEnglish: Frozen agents refine their execution harness from experience. Iterative gains are reported, but matched-budget and ordering controls still require close inspection.\n\n## 2. LoCo-WAM：用测试时训练保存回合内历史\n\nSheng Cheng、Deqian Kong；首次提交 2026-11-19 UTC，v1。[官方论文](https://arxiv.org/abs/2611.26853v1)\n\n它用新观察帧更新视频专家的LoRA，让旧信息在离开短输入窗口后仍影响预测。预训练权重冻结，但适配器有梯度更新，而且每个episode重置：**不是免训练，也不是跨回合累积记忆**。RoboCasa GR-1的2.4秒历史设置从67.9%升到73.6%；同表9.6秒基础模型为73.5%。[§3–4、Table1](https://arxiv.org/html/2611.26853v1#S4)\n\nRoboTwin结果来自8个筛选任务且不做域随机化，不能扩大成完整50任务随机化结论。证据为仿真；本轮未确认官方代码入口。\n\nEnglish: LoCo-WAM stores episode history in a learned video adapter. Test-time gradients and per-episode resets separate it from frozen-weight cross-episode memory.\n\n## 3. Mem-X：任务成功是否真的依赖历史记忆？\n\nZhikang Shi、Yuk Tung Samuel Fang、Hongyu Ding 等；首次提交 2026-11-20 UTC，v1。[官方论文](https://arxiv.org/abs/2611.27166v1)\n\n这是导航评测，不是机器人操作算法。它把历史对象和历史路线写进后续指令，包含710个session、2071个episode，其中1204个依赖记忆。重点是区分“碰巧到达终点”和“按要求复用历史”：TableIII中JanusVLN在L3的SR为28.03%，受路线约束的C-SR仅5.73%。[§III–V](https://arxiv.org/html/2611.27166v1#S3)\n\n**边界：** 使用仿真提供的无漂移位姿，L2/L3只是隐藏跨episode坐标变换；不是完全无位姿导航。将这种记忆依赖设计迁移到操作任务，是值得验证的推断。[作者代码入口](https://github.com/NJU-R-L-Group-Embodied-Lab/Mem-X)已核验可访问，未执行复现。\n\nEnglish: Mem-X makes later navigation explicitly depend on earlier episodes. Its constrained metrics distinguish goal arrival from valid memory reuse, under simulator pose assumptions.\n\n## 4. 世界模型方向补充：Skill-JEPA\n\nTomás Couso Coddou、Christ Devia、Rex G. Liu 等；首次提交 2026-11-19 UTC，v1。[官方论文](https://arxiv.org/abs/2611.26825v1)\n\n把原始动作块编码为符合高斯先验的技能，使规划器的采样更接近世界模型见过的训练分布。动作VAE与世界模型联合训练，规划器本身不改；不是只更新memory/context。跨三种JEPA模型，80步目标的平均成功率由42%到62%，有三训练种子与同数据/同规划器比较。证据限于仿真。[§3–4](https://arxiv.org/html/2611.26825v1#S4)\n\nEnglish: Skill-JEPA learns an action representation aligned with a planner's sampling distribution. Its gains require joint training, unlike runtime-only memory changes.\n\n## 5. 候选覆盖与初筛层级\n\n| 方向 | 保留候选数（交叉标签可重叠） | 方向首选 |\n|---|---:|---|\n| 世界模型 | 10 | Skill-JEPA |\n| 机器人 | 10 | Embodied-Harness |\n| Agent Memory | 8 | Mem-X |\n| RSI | 10 | Embodied-Harness |\n| 世界动作模型 | 5 | LoCo-WAM |\n\n五个池共43个席位、去重34篇；数量是人为保留的候选规模，不是该方向全网新增数。完整列表和最多3篇短名单见[筛选依据](#screening)。只有已抽查到足够正文证据的条目给五维初筛分数，其余标“证据不足”，不编造评分。\n\n## 6. 旧稿更新，不当作新论文\n\n本轮另外捕获 [Phoenix v2](https://arxiv.org/abs/2611.24938v2)、[MAWAM v2](https://arxiv.org/abs/2611.25105v2)、[STARK v2](https://arxiv.org/abs/2611.25705v2)。均为11月20日修订、11月23日公告；未做版本差异审计，不把已有结果宣传成新版本贡献。原来的日报与收藏不覆盖。\n\n## 7. 来源与公告延迟\n\n五个官方RSS（[cs.RO](https://rss.arxiv.org/rss/cs.RO)、[cs.AI](https://rss.arxiv.org/rss/cs.AI)、[cs.CL](https://rss.arxiv.org/rss/cs.CL)、[cs.LG](https://rss.arxiv.org/rss/cs.LG)、[cs.CV](https://rss.arxiv.org/rss/cs.CV)）合计返回1193条分类记录，含交叉分类与替换稿；粗关键词匹配得到165个ID。补充API最新修订查询最多100条，并用官方ID查询核验入选37篇的作者与日期。\n\n常规48小时交叠起点是11月20日23:46 UTC，但本次新公告包括更早提交的稿件。因此依据**当前官方公告与此前未见的版本**补漏，将元数据核验起点明确回溯至11月19日19:00 UTC，截止11月23日15:57 UTC；所有原始日期保留。这不是改写首发日，也不是把上次抓取时间当作论文公开时间。\n\n本轮未发现与已发布版本相同的重复项；正式精读库仍为18篇。来源和检索数量有限，不声称全网覆盖。尚未核实这些候选的正式录用信息，统一按预印本展示。没有发布原文、完整摘要、译文或图片。",
+  "appendixMarkdown": "## 筛选方法与证据等级\n\n本期只发布原创分析和元数据。以当前官方RSS公告与此前ID/版本记录比较，补上周末公告延迟，保留真实首次提交和修订时间。43个方向席位去重为34篇，另列3篇v2更新。\n\n每方向最多10篇→最多3篇→1篇；不足不凑数。N/M/E/W/R分别为创新性、方法完整性、实验充分性、表达、相关性，权重30%/25%/25%/10%/10%，各1–5分。分数是主观初筛，不是作者指标或质量认证；仅方法/摘要不足以支持完整评分时，总分为N/A。阅读顺序优先研究邻近程度，不能把N/A或小分差解释成论文质量差。\n\n## 世界模型：10 → 3 → 1\n\n| 候选与官方原文 | 首次提交UTC | 版本 | 初筛层级 |\n|---|---|---|---|\n| [Skill-JEPA: Learning Planner-Aligned Action Spaces for World Models](https://arxiv.org/abs/2611.26825v1) | 2026-11-19T21:21:13Z | 2611.26825v1 | 方法/实验重点抽查 |\n| [Latent Space Planning with Sequential Monte Carlo](https://arxiv.org/abs/2611.26706v1) | 2026-11-19T19:05:06Z | 2611.26706v1 | 仅摘要初筛 |\n| [SOAR: Training-Free Rank-Consistent Rollout Compression for Latent World Model Planning](https://arxiv.org/abs/2611.27639v1) | 2026-11-20T14:03:18Z | 2611.27639v1 | 仅摘要初筛 |\n| [PACE-WM: Parallel World Modeling with Action History for Visual Planning](https://arxiv.org/abs/2611.27173v1) | 2026-11-20T05:59:05Z | 2611.27173v1 | 仅摘要初筛 |\n| [ViewDreamer: A Robot World Model beyond Fixed Camera Setups](https://arxiv.org/abs/2611.26981v1) | 2026-11-20T01:58:31Z | 2611.26981v1 | 仅摘要初筛 |\n| [Non-penetrating World Models](https://arxiv.org/abs/2611.27963v1) | 2026-11-20T18:44:57Z | 2611.27963v1 | 仅摘要初筛 |\n| [What Must a Model Tell a Planner? Outcome Interfaces for Risk-Aware Planning After Robot Damage](https://arxiv.org/abs/2611.27939v1) | 2026-11-20T18:12:49Z | 2611.27939v1 | 仅摘要初筛 |\n| [Learning Interaction Dynamics via Motion-Region Guidance for Robotic Video World Models](https://arxiv.org/abs/2611.27344v1) | 2026-11-20T09:20:22Z | 2611.27344v1 | 仅摘要初筛 |\n| [Beyond Future Views: Exploring Future-State World Models for Vision-Language Navigation](https://arxiv.org/abs/2611.27418v1) | 2026-11-20T10:22:30Z | 2611.27418v1 | 仅摘要初筛 |\n| [PhysForce: Physics-aware Force Control for Interactive Video World Model](https://arxiv.org/abs/2611.27164v1) | 2026-11-20T05:49:14Z | 2611.27164v1 | 仅摘要初筛 |\n\n| 短名单 | N | M | E | W | R | 加权分 | 证据/限制 |\n|---|---:|---:|---:|---:|---:|---:|---|\n| [Skill-JEPA: Learning Planner-Aligned Action Spaces for World Models](https://arxiv.org/html/2611.26825v1) | 4 | 4 | 4 | 4 | 4 | 4.00 | §3–4：端到端训练动作VAE和世界模型；匹配数据与规划器、3训练种子；验证限于仿真。 |\n| [Latent Space Planning with Sequential Monte Carlo](https://arxiv.org/abs/2611.26706v1) | — | — | — | — | — | N/A | 本轮仅核验元数据与摘要，实验/复现证据不足；不输出完整质量分。 |\n| [SOAR: Training-Free Rank-Consistent Rollout Compression for Latent World Model Planning](https://arxiv.org/abs/2611.27639v1) | — | — | — | — | — | N/A | 本轮仅核验元数据与摘要，实验/复现证据不足；不输出完整质量分。 |\n\n**方向选择：** 优先 Skill-JEPA，因为它有明确的训练—规划分布错配问题与受控比较；另两篇保留为规划算法/加速候选。\n\n## 机器人：10 → 3 → 1\n\n| 候选与官方原文 | 首次提交UTC | 版本 | 初筛层级 |\n|---|---|---|---|\n| [Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation](https://arxiv.org/abs/2611.27689v1) | 2026-11-20T14:55:07Z | 2611.27689v1 | 方法/实验重点抽查 |\n| [MomentMem: Memorizing Key Moments for Robot Manipulation](https://arxiv.org/abs/2611.26745v1) | 2026-11-19T19:42:27Z | 2611.26745v1 | 方法部分抽查，完整评分不足 |\n| [Tripwire: Robot Agents that Program Their Own Interrupts under Human Disturbance](https://arxiv.org/abs/2611.27182v1) | 2026-11-20T06:12:51Z | 2611.27182v1 | 仅摘要初筛 |\n| [RoboDyna: A Benchmark for Evaluating Robotic Manipulation under Physically Grounded Dynamics](https://arxiv.org/abs/2611.26969v1) | 2026-11-20T01:44:10Z | 2611.26969v1 | 仅摘要初筛 |\n| [RoboPRO: A Perturbation-Resilient and Obstacle-Aware Benchmark for Robotic Manipulation](https://arxiv.org/abs/2611.26971v1) | 2026-11-20T01:47:52Z | 2611.26971v1 | 仅摘要初筛 |\n| [RoboColiseum: Co-evolution of Simulation, Evaluation, and Models](https://arxiv.org/abs/2611.27042v1) | 2026-11-20T03:14:26Z | 2611.27042v1 | 仅摘要初筛 |\n| [NavTTT: Adaptive Parametric Memory via Hierarchical Test-Time Training for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27219v1) | 2026-11-20T07:14:55Z | 2611.27219v1 | 仅摘要初筛 |\n| [FORTH: Grounding Tactile VLA Execution via Forward-Only Proxy-Control Pairing](https://arxiv.org/abs/2611.26744v1) | 2026-11-19T19:42:19Z | 2611.26744v1 | 仅摘要初筛 |\n| [FoRe: A Force-Guided Framework for Autonomous Grasp Recovery in Vision-Language-Action Models](https://arxiv.org/abs/2611.27011v1) | 2026-11-20T02:39:15Z | 2611.27011v1 | 仅摘要初筛 |\n| [Mem-X: A Memory-Dependent Cross-Episode Benchmark for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27166v1) | 2026-11-20T05:51:31Z | 2611.27166v1 | 方法/实验重点抽查 |\n\n| 短名单 | N | M | E | W | R | 加权分 | 证据/限制 |\n|---|---:|---:|---:|---:|---:|---:|---|\n| [Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation](https://arxiv.org/html/2611.27689v1) | 3 | 3 | 3 | 4 | 5 | 3.30 | §3–4、Fig.6：冻结模型，修改harness与经验；有多轮曲线。真机仅3任务共30次；顺序和独立进化种子仍需核查。 |\n| [MomentMem: Memorizing Key Moments for Robot Manipulation](https://arxiv.org/html/2611.26745v1) | — | — | — | — | — | N/A | 方法抽查：记忆器与执行器分阶段训练；本轮未完成实验深校，不给完整质量分。 |\n| [Tripwire: Robot Agents that Program Their Own Interrupts under Human Disturbance](https://arxiv.org/abs/2611.27182v1) | — | — | — | — | — | N/A | 本轮仅核验元数据与摘要，实验/复现证据不足；不输出完整质量分。 |\n\n**方向选择：** 优先 Embodied-Harness，主要因为它直接研究冻结权重、记忆、机器人操作与多轮改进，与你关注的组合最接近；不是宣称它已解决严格纵向因果评估。\n\n## Agent Memory：8 → 3 → 1\n\n| 候选与官方原文 | 首次提交UTC | 版本 | 初筛层级 |\n|---|---|---|---|\n| [Mem-X: A Memory-Dependent Cross-Episode Benchmark for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27166v1) | 2026-11-20T05:51:31Z | 2611.27166v1 | 方法/实验重点抽查 |\n| [MomentMem: Memorizing Key Moments for Robot Manipulation](https://arxiv.org/abs/2611.26745v1) | 2026-11-19T19:42:27Z | 2611.26745v1 | 方法部分抽查，完整评分不足 |\n| [NavTTT: Adaptive Parametric Memory via Hierarchical Test-Time Training for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27219v1) | 2026-11-20T07:14:55Z | 2611.27219v1 | 仅摘要初筛 |\n| [NavRSI: Recursive Harness Self-Improvement for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27499v1) | 2026-11-20T11:47:47Z | 2611.27499v1 | 方法部分抽查，完整评分不足 |\n| [Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation](https://arxiv.org/abs/2611.27689v1) | 2026-11-20T14:55:07Z | 2611.27689v1 | 方法/实验重点抽查 |\n| [VMSA: Video Memory Skill Agent for Long Video Understanding](https://arxiv.org/abs/2611.27381v1) | 2026-11-20T09:46:06Z | 2611.27381v1 | 仅摘要初筛 |\n| [AstronautBench: Measuring Agent Self-Improvement Across Episodes Through Knowledge, Evidence, and Progress](https://arxiv.org/abs/2611.26910v1) | 2026-11-19T23:48:39Z | 2611.26910v1 | 仅摘要初筛 |\n| [Privacy Protection in Self-Evolving Personal Agents: Persistent Memory and Cross-Carrier Transfer](https://arxiv.org/abs/2611.26983v1) | 2026-11-20T02:03:15Z | 2611.26983v1 | 仅摘要初筛 |\n\n| 短名单 | N | M | E | W | R | 加权分 | 证据/限制 |\n|---|---:|---:|---:|---:|---:|---:|---|\n| [Mem-X: A Memory-Dependent Cross-Episode Benchmark for Vision-and-Language Navigation](https://arxiv.org/html/2611.27166v1) | 4 | 4 | 4 | 4 | 5 | 4.10 | §III–V、TableIII：跨episode记忆依赖与路线约束指标明确；使用无漂移的仿真位姿，不等同真实机器人定位。 |\n| [MomentMem: Memorizing Key Moments for Robot Manipulation](https://arxiv.org/html/2611.26745v1) | — | — | — | — | — | N/A | 方法抽查：记忆器与执行器分阶段训练；本轮未完成实验深校，不给完整质量分。 |\n| [NavTTT: Adaptive Parametric Memory via Hierarchical Test-Time Training for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27219v1) | — | — | — | — | — | N/A | 本轮仅核验元数据与摘要，实验/复现证据不足；不输出完整质量分。 |\n\n**方向选择：** 优先 Mem-X，它把跨回合记忆依赖落实为任务和指标，适合借鉴评测设计；MomentMem/NavTTT更偏回合内信息保存。\n\n## RSI：10 → 3 → 1\n\n| 候选与官方原文 | 首次提交UTC | 版本 | 初筛层级 |\n|---|---|---|---|\n| [Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation](https://arxiv.org/abs/2611.27689v1) | 2026-11-20T14:55:07Z | 2611.27689v1 | 方法/实验重点抽查 |\n| [NavRSI: Recursive Harness Self-Improvement for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27499v1) | 2026-11-20T11:47:47Z | 2611.27499v1 | 方法部分抽查，完整评分不足 |\n| [CoEvoBench: Can LLMs Drive Recursive Co-Evolution of Agentic Systems?](https://arxiv.org/abs/2611.27116v1) | 2026-11-20T04:40:59Z | 2611.27116v1 | 仅摘要初筛 |\n| [AstronautBench: Measuring Agent Self-Improvement Across Episodes Through Knowledge, Evidence, and Progress](https://arxiv.org/abs/2611.26910v1) | 2026-11-19T23:48:39Z | 2611.26910v1 | 仅摘要初筛 |\n| [RoboColiseum: Co-evolution of Simulation, Evaluation, and Models](https://arxiv.org/abs/2611.27042v1) | 2026-11-20T03:14:26Z | 2611.27042v1 | 仅摘要初筛 |\n| [EvoTER: Evolving Embodied Agents via Tool-Use Experience and Reflection](https://arxiv.org/abs/2611.27797v1) | 2026-11-20T16:28:51Z | 2611.27797v1 | 仅摘要初筛 |\n| [Search-RSI: Expanding Search Worlds Along Multimodal Agents' Capability Frontier](https://arxiv.org/abs/2611.27780v1) | 2026-11-20T16:09:46Z | 2611.27780v1 | 仅摘要初筛 |\n| [RemoteEvolver: Expanding Earth Observation Capabilities through Agent Harness Evolution](https://arxiv.org/abs/2611.27110v1) | 2026-11-20T04:33:45Z | 2611.27110v1 | 仅摘要初筛 |\n| [SIR-Agent: Skill-Augmented Image Restoration Agent with Recursive Self-Improvement](https://arxiv.org/abs/2611.27285v1) | 2026-11-20T08:24:50Z | 2611.27285v1 | 仅摘要初筛 |\n| [Self-Evolving Beyond Human-Crafted Experience for EDA Scripting](https://arxiv.org/abs/2611.26912v1) | 2026-11-19T23:55:30Z | 2611.26912v1 | 仅摘要初筛 |\n\n| 短名单 | N | M | E | W | R | 加权分 | 证据/限制 |\n|---|---:|---:|---:|---:|---:|---:|---|\n| [Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation](https://arxiv.org/html/2611.27689v1) | 3 | 3 | 3 | 4 | 5 | 3.30 | §3–4、Fig.6：冻结模型，修改harness与经验；有多轮曲线。真机仅3任务共30次；顺序和独立进化种子仍需核查。 |\n| [NavRSI: Recursive Harness Self-Improvement for Vision-and-Language Navigation](https://arxiv.org/html/2611.27499v1) | — | — | — | — | — | N/A | 方法抽查：冻结导航模型、改写harness，搜索仅用训练场景；设计器有特权诊断，实验仍需深校。 |\n| [AstronautBench: Measuring Agent Self-Improvement Across Episodes Through Knowledge, Evidence, and Progress](https://arxiv.org/abs/2611.26910v1) | — | — | — | — | — | N/A | 本轮仅核验元数据与摘要，实验/复现证据不足；不输出完整质量分。 |\n\n**方向选择：** 优先 Embodied-Harness，操作域与当前研究问题最接近；NavRSI为导航侧邻近方法，AstronautBench为跨回合证据评测候选。\n\n## 世界动作模型：5 → 3 → 1\n\n| 候选与官方原文 | 首次提交UTC | 版本 | 初筛层级 |\n|---|---|---|---|\n| [LoCo-WAM: Test-Time Training as Long Context for World-Action Models](https://arxiv.org/abs/2611.26853v1) | 2026-11-19T22:15:15Z | 2611.26853v1 | 方法/实验重点抽查 |\n| [Ego4Gen: Generating Geometry-Grounded Motion Tokens as a World-Action Interface](https://arxiv.org/abs/2611.27513v1) | 2026-11-20T12:04:12Z | 2611.27513v1 | 仅摘要初筛 |\n| [ReActWAM: Action-Consistent Caching for Efficient World-Action Models](https://arxiv.org/abs/2611.27372v1) | 2026-11-20T09:41:22Z | 2611.27372v1 | 仅摘要初筛 |\n| [Beyond Linear Decodability: Understanding and Improving Instruction Following in World Action Models](https://arxiv.org/abs/2611.27401v1) | 2026-11-20T10:07:53Z | 2611.27401v1 | 仅摘要初筛 |\n| [ViewDreamer: A Robot World Model beyond Fixed Camera Setups](https://arxiv.org/abs/2611.26981v1) | 2026-11-20T01:58:31Z | 2611.26981v1 | 仅摘要初筛 |\n\n| 短名单 | N | M | E | W | R | 加权分 | 证据/限制 |\n|---|---:|---:|---:|---:|---:|---:|---|\n| [LoCo-WAM: Test-Time Training as Long Context for World-Action Models](https://arxiv.org/html/2611.26853v1) | 4 | 4 | 4 | 4 | 5 | 4.10 | §3–4、Table1：视频LoRA在线更新，每episode重置。RoboTwin仅8个筛选任务、clean场景，不能写成全50任务随机化结果。 |\n| [ReActWAM: Action-Consistent Caching for Efficient World-Action Models](https://arxiv.org/abs/2611.27372v1) | — | — | — | — | — | N/A | 本轮仅核验元数据与摘要，实验/复现证据不足；不输出完整质量分。 |\n| [ViewDreamer: A Robot World Model beyond Fixed Camera Setups](https://arxiv.org/abs/2611.26981v1) | — | — | — | — | — | N/A | 本轮仅核验元数据与摘要，实验/复现证据不足；不输出完整质量分。 |\n\n**方向选择：** 优先 LoCo-WAM，因为它清楚区分episode内参数记忆与跨episode积累，有同骨干比较；其余两篇先作摘要初筛。\n\n## 版本核验\n\n本期候选及更新均在11月23日RSS批次出现。下列作者为第一作者，完整署名见官方原文。未进行会议录用的穷尽检索。\n\n| ID/官方链接 | 第一作者 | 首次提交UTC | 当前修订UTC | 类别 |\n|---|---|---|---|---|\n| [2611.24938v2](https://arxiv.org/abs/2611.24938v2) | Yupeng Zheng | 2026-11-18T18:59:04Z | 2026-11-20T05:03:55Z | 旧稿更新；未做差异审计 |\n| [2611.25105v2](https://arxiv.org/abs/2611.25105v2) | Xianzhe Fan | 2026-11-18T19:39:30Z | 2026-11-20T14:07:07Z | 旧稿更新；未做差异审计 |\n| [2611.25705v2](https://arxiv.org/abs/2611.25705v2) | Aryan Jain | 2026-11-19T08:19:28Z | 2026-11-20T10:18:34Z | 旧稿更新；未做差异审计 |\n| [2611.26706v1](https://arxiv.org/abs/2611.26706v1) | Hrishikesh Viswanath | 2026-11-19T19:05:06Z | 2026-11-19T19:05:06Z | 本期新发现候选 |\n| [2611.26744v1](https://arxiv.org/abs/2611.26744v1) | Junde Li | 2026-11-19T19:42:19Z | 2026-11-19T19:42:19Z | 本期新发现候选 |\n| [2611.26745v1](https://arxiv.org/abs/2611.26745v1) | Guangyu Zhao | 2026-11-19T19:42:27Z | 2026-11-19T19:42:27Z | 本期新发现候选 |\n| [2611.26825v1](https://arxiv.org/abs/2611.26825v1) | Tomás Couso Coddou | 2026-11-19T21:21:13Z | 2026-11-19T21:21:13Z | 本期新发现候选 |\n| [2611.26853v1](https://arxiv.org/abs/2611.26853v1) | Sheng Cheng | 2026-11-19T22:15:15Z | 2026-11-19T22:15:15Z | 本期新发现候选 |\n| [2611.26910v1](https://arxiv.org/abs/2611.26910v1) | Congyuan Yu | 2026-11-19T23:48:39Z | 2026-11-19T23:48:39Z | 本期新发现候选 |\n| [2611.26912v1](https://arxiv.org/abs/2611.26912v1) | Yang Liu | 2026-11-19T23:55:30Z | 2026-11-19T23:55:30Z | 本期新发现候选 |\n| [2611.26969v1](https://arxiv.org/abs/2611.26969v1) | Zhiyuan Li | 2026-11-20T01:44:10Z | 2026-11-20T01:44:10Z | 本期新发现候选 |\n| [2611.26971v1](https://arxiv.org/abs/2611.26971v1) | Zhiyuan Li | 2026-11-20T01:47:52Z | 2026-11-20T01:47:52Z | 本期新发现候选 |\n| [2611.26981v1](https://arxiv.org/abs/2611.26981v1) | Ye Mao | 2026-11-20T01:58:31Z | 2026-11-20T01:58:31Z | 本期新发现候选 |\n| [2611.26983v1](https://arxiv.org/abs/2611.26983v1) | Zibin Lin | 2026-11-20T02:03:15Z | 2026-11-20T02:03:15Z | 本期新发现候选 |\n| [2611.27011v1](https://arxiv.org/abs/2611.27011v1) | Shuai Peng | 2026-11-20T02:39:15Z | 2026-11-20T02:39:15Z | 本期新发现候选 |\n| [2611.27042v1](https://arxiv.org/abs/2611.27042v1) | Chenghao Yin | 2026-11-20T03:14:26Z | 2026-11-20T03:14:26Z | 本期新发现候选 |\n| [2611.27110v1](https://arxiv.org/abs/2611.27110v1) | Shengxiang Xu | 2026-11-20T04:33:45Z | 2026-11-20T04:33:45Z | 本期新发现候选 |\n| [2611.27116v1](https://arxiv.org/abs/2611.27116v1) | Chuan Xiao | 2026-11-20T04:40:59Z | 2026-11-20T04:40:59Z | 本期新发现候选 |\n| [2611.27164v1](https://arxiv.org/abs/2611.27164v1) | Xuancheng Xu | 2026-11-20T05:49:14Z | 2026-11-20T05:49:14Z | 本期新发现候选 |\n| [2611.27166v1](https://arxiv.org/abs/2611.27166v1) | Zhikang Shi | 2026-11-20T05:51:31Z | 2026-11-20T05:51:31Z | 本期新发现候选 |\n| [2611.27173v1](https://arxiv.org/abs/2611.27173v1) | Haishan Liu | 2026-11-20T05:59:05Z | 2026-11-20T05:59:05Z | 本期新发现候选 |\n| [2611.27182v1](https://arxiv.org/abs/2611.27182v1) | Sunli Chen | 2026-11-20T06:12:51Z | 2026-11-20T06:12:51Z | 本期新发现候选 |\n| [2611.27219v1](https://arxiv.org/abs/2611.27219v1) | Xiaoyu Luo | 2026-11-20T07:14:55Z | 2026-11-20T07:14:55Z | 本期新发现候选 |\n| [2611.27285v1](https://arxiv.org/abs/2611.27285v1) | Yijian Wang | 2026-11-20T08:24:50Z | 2026-11-20T08:24:50Z | 本期新发现候选 |\n| [2611.27344v1](https://arxiv.org/abs/2611.27344v1) | Yongkang He | 2026-11-20T09:20:22Z | 2026-11-20T09:20:22Z | 本期新发现候选 |\n| [2611.27372v1](https://arxiv.org/abs/2611.27372v1) | Zhaochen Guo | 2026-11-20T09:41:22Z | 2026-11-20T09:41:22Z | 本期新发现候选 |\n| [2611.27381v1](https://arxiv.org/abs/2611.27381v1) | Changin Choi | 2026-11-20T09:46:06Z | 2026-11-20T09:46:06Z | 本期新发现候选 |\n| [2611.27401v1](https://arxiv.org/abs/2611.27401v1) | Bokai Ji | 2026-11-20T10:07:53Z | 2026-11-20T10:07:53Z | 本期新发现候选 |\n| [2611.27418v1](https://arxiv.org/abs/2611.27418v1) | Kangyi Wu | 2026-11-20T10:22:30Z | 2026-11-20T10:22:30Z | 本期新发现候选 |\n| [2611.27499v1](https://arxiv.org/abs/2611.27499v1) | Guangzhao Dai | 2026-11-20T11:47:47Z | 2026-11-20T11:47:47Z | 本期新发现候选 |\n| [2611.27513v1](https://arxiv.org/abs/2611.27513v1) | Yang Liu | 2026-11-20T12:04:12Z | 2026-11-20T12:04:12Z | 本期新发现候选 |\n| [2611.27639v1](https://arxiv.org/abs/2611.27639v1) | Anqi Li | 2026-11-20T14:03:18Z | 2026-11-20T14:03:18Z | 本期新发现候选 |\n| [2611.27689v1](https://arxiv.org/abs/2611.27689v1) | Zhenxuan Fan | 2026-11-20T14:55:07Z | 2026-11-20T14:55:07Z | 本期新发现候选 |\n| [2611.27780v1](https://arxiv.org/abs/2611.27780v1) | Chengchao Lv | 2026-11-20T16:09:46Z | 2026-11-20T16:09:46Z | 本期新发现候选 |\n| [2611.27797v1](https://arxiv.org/abs/2611.27797v1) | Yingting Zhou | 2026-11-20T16:28:51Z | 2026-11-20T16:28:51Z | 本期新发现候选 |\n| [2611.27939v1](https://arxiv.org/abs/2611.27939v1) | Hassan Iqbal | 2026-11-20T18:12:49Z | 2026-11-20T18:12:49Z | 本期新发现候选 |\n| [2611.27963v1](https://arxiv.org/abs/2611.27963v1) | Yuhang Dai | 2026-11-20T18:44:57Z | 2026-11-20T18:44:57Z | 本期新发现候选 |\n\n## 审计边界\n\nEmbodied-Harness的多轮曲线已在正文找到，不能再声称这一方向不存在曲线；是否满足更严格的顺序随机化、同预算与多进化种子条件仍待完整精读。LoCo-WAM的回合重置和Mem-X的仿真位姿假设均不能省略。未执行任何仓库代码或复现实验，也未将候选标记为完成精读。\n",
+  "candidates": [
+    {
+      "id": "2611.27219",
+      "title": "NavTTT: Adaptive Parametric Memory via Hierarchical Test-Time Training for Vision-and-Language Navigation",
+      "authors": [
+        "Xiaoyu Luo",
+        "Chengxing Lin",
+        "Jiaxin Huang",
+        "Jiale Liu",
+        "Jingyu Guo",
+        "Sirui Chen",
+        "Aolin Li",
+        "Shaoli Huang",
+        "Cheng-zhong Xu",
+        "Hui Kong"
+      ],
+      "published": "2026-11-20T07:14:55Z",
+      "updated": "2026-11-20T07:14:55Z",
+      "version": "2611.27219v1",
+      "url": "https://arxiv.org/abs/2611.27219v1",
+      "topics": [
+        "robotics",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27173",
+      "title": "PACE-WM: Parallel World Modeling with Action History for Visual Planning",
+      "authors": [
+        "Haishan Liu",
+        "Shijie Lian",
+        "Bin Yu",
+        "Yao Zhang",
+        "Changti Wu",
+        "Fanping Liu",
+        "Jianzheng Liu",
+        "Lei Xie",
+        "Cong Huang",
+        "Kai Chen"
+      ],
+      "published": "2026-11-20T05:59:05Z",
+      "updated": "2026-11-20T05:59:05Z",
+      "version": "2611.27173v1",
+      "url": "https://arxiv.org/abs/2611.27173v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27166",
+      "title": "Mem-X: A Memory-Dependent Cross-Episode Benchmark for Vision-and-Language Navigation",
+      "authors": [
+        "Zhikang Shi",
+        "Yuk Tung Samuel Fang",
+        "Hongyu Ding",
+        "Zixuan Chen",
+        "Yujin Wang",
+        "Junhui Guo",
+        "You Wu",
+        "Jieqi Shi",
+        "Jing Huo",
+        "Yang Gao"
+      ],
+      "published": "2026-11-20T05:51:31Z",
+      "updated": "2026-11-20T05:51:31Z",
+      "version": "2611.27166v1",
+      "url": "https://arxiv.org/abs/2611.27166v1",
+      "topics": [
+        "robotics",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27499",
+      "title": "NavRSI: Recursive Harness Self-Improvement for Vision-and-Language Navigation",
+      "authors": [
+        "Guangzhao Dai",
+        "Guoxin Lian",
+        "Shuo Wang",
+        "Shengbin Yue",
+        "Qianru Sun",
+        "Xiangbo Shu",
+        "Bin Zhu"
+      ],
+      "published": "2026-11-20T11:47:47Z",
+      "updated": "2026-11-20T11:47:47Z",
+      "version": "2611.27499v1",
+      "url": "https://arxiv.org/abs/2611.27499v1",
+      "topics": [
+        "agent-memory",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26910",
+      "title": "AstronautBench: Measuring Agent Self-Improvement Across Episodes Through Knowledge, Evidence, and Progress",
+      "authors": [
+        "Congyuan Yu",
+        "Runping Tian"
+      ],
+      "published": "2026-11-19T23:48:39Z",
+      "updated": "2026-11-19T23:48:39Z",
+      "version": "2611.26910v1",
+      "url": "https://arxiv.org/abs/2611.26910v1",
+      "topics": [
+        "agent-memory",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26853",
+      "title": "LoCo-WAM: Test-Time Training as Long Context for World-Action Models",
+      "authors": [
+        "Sheng Cheng",
+        "Deqian Kong"
+      ],
+      "published": "2026-11-19T22:15:15Z",
+      "updated": "2026-11-19T22:15:15Z",
+      "version": "2611.26853v1",
+      "url": "https://arxiv.org/abs/2611.26853v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26744",
+      "title": "FORTH: Grounding Tactile VLA Execution via Forward-Only Proxy-Control Pairing",
+      "authors": [
+        "Junde Li",
+        "Wei-Han Yu",
+        "Xiangyi Chu",
+        "Yaoxin Li",
+        "Jiawei Xu",
+        "Ka-Fai Un",
+        "Pui-In Mak"
+      ],
+      "published": "2026-11-19T19:42:19Z",
+      "updated": "2026-11-19T19:42:19Z",
+      "version": "2611.26744v1",
+      "url": "https://arxiv.org/abs/2611.26744v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27689",
+      "title": "Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation",
+      "authors": [
+        "Zhenxuan Fan",
+        "Zhuoya Wang",
+        "Yuqian Yuan",
+        "Wenqiao Zhang",
+        "Juncheng Li",
+        "Jun Xiao",
+        "Siliang Tang",
+        "Yueting Zhuang"
+      ],
+      "published": "2026-11-20T14:55:07Z",
+      "updated": "2026-11-20T14:55:07Z",
+      "version": "2611.27689v1",
+      "url": "https://arxiv.org/abs/2611.27689v1",
+      "topics": [
+        "robotics",
+        "agent-memory",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27116",
+      "title": "CoEvoBench: Can LLMs Drive Recursive Co-Evolution of Agentic Systems?",
+      "authors": [
+        "Chuan Xiao",
+        "Baojie Wang",
+        "Haizhao Fan",
+        "Hongzhe Du",
+        "Xander Xu"
+      ],
+      "published": "2026-11-20T04:40:59Z",
+      "updated": "2026-11-20T04:40:59Z",
+      "version": "2611.27116v1",
+      "url": "https://arxiv.org/abs/2611.27116v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27110",
+      "title": "RemoteEvolver: Expanding Earth Observation Capabilities through Agent Harness Evolution",
+      "authors": [
+        "Shengxiang Xu",
+        "Liang Yao",
+        "Shuyi Chen",
+        "Yishu Wang",
+        "Shimin Di",
+        "Fan Liu",
+        "Bishun Yao",
+        "Hanghui Guo",
+        "Xinyu Liu",
+        "Chengye Liang",
+        "Yuyu Luo",
+        "Min-Ling Zhang"
+      ],
+      "published": "2026-11-20T04:33:45Z",
+      "updated": "2026-11-20T04:33:45Z",
+      "version": "2611.27110v1",
+      "url": "https://arxiv.org/abs/2611.27110v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26912",
+      "title": "Self-Evolving Beyond Human-Crafted Experience for EDA Scripting",
+      "authors": [
+        "Yang Liu",
+        "Shengbo Tong",
+        "Xiyuan Chen",
+        "Shiwei Hou",
+        "Sen Yuan",
+        "Hao Wang",
+        "Yanfeng Li",
+        "Hongwen Li",
+        "Yiming Zhu",
+        "Zhuolun He",
+        "Wenjian Yu"
+      ],
+      "published": "2026-11-19T23:55:30Z",
+      "updated": "2026-11-19T23:55:30Z",
+      "version": "2611.26912v1",
+      "url": "https://arxiv.org/abs/2611.26912v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26745",
+      "title": "MomentMem: Memorizing Key Moments for Robot Manipulation",
+      "authors": [
+        "Guangyu Zhao",
+        "Yongchang Zhang",
+        "Ruizhang Jiang",
+        "Zhihong Yu",
+        "Yuhao Zhang",
+        "Tao Wu",
+        "Qimin Zhou",
+        "Kunsong Shi",
+        "Haoran Wen",
+        "Zeyu Zhang",
+        "Yin Li",
+        "Kun Zhan",
+        "Yiwu Zhong"
+      ],
+      "published": "2026-11-19T19:42:27Z",
+      "updated": "2026-11-19T19:42:27Z",
+      "version": "2611.26745v1",
+      "url": "https://arxiv.org/abs/2611.26745v1",
+      "topics": [
+        "robotics",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27381",
+      "title": "VMSA: Video Memory Skill Agent for Long Video Understanding",
+      "authors": [
+        "Changin Choi",
+        "Jungwon Park",
+        "Jungmin Ko",
+        "Jimyeong Kim",
+        "Wonjong Rhee"
+      ],
+      "published": "2026-11-20T09:46:06Z",
+      "updated": "2026-11-20T09:46:06Z",
+      "version": "2611.27381v1",
+      "url": "https://arxiv.org/abs/2611.27381v1",
+      "topics": [
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27372",
+      "title": "ReActWAM: Action-Consistent Caching for Efficient World-Action Models",
+      "authors": [
+        "Zhaochen Guo",
+        "Yunke Wang",
+        "Siyu Xu",
+        "Zijian Wang",
+        "Chenghao Xia",
+        "Chengbin Du",
+        "Shinan Liu",
+        "Chang Xu"
+      ],
+      "published": "2026-11-20T09:41:22Z",
+      "updated": "2026-11-20T09:41:22Z",
+      "version": "2611.27372v1",
+      "url": "https://arxiv.org/abs/2611.27372v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27285",
+      "title": "SIR-Agent: Skill-Augmented Image Restoration Agent with Recursive Self-Improvement",
+      "authors": [
+        "Yijian Wang",
+        "Qingsen Yan",
+        "Weiyu Zhou",
+        "Mingde Zhang",
+        "Axi Niu",
+        "Haokui Zhang",
+        "Jiantao Zhou"
+      ],
+      "published": "2026-11-20T08:24:50Z",
+      "updated": "2026-11-20T08:24:50Z",
+      "version": "2611.27285v1",
+      "url": "https://arxiv.org/abs/2611.27285v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26706",
+      "title": "Latent Space Planning with Sequential Monte Carlo",
+      "authors": [
+        "Hrishikesh Viswanath",
+        "Anindita Ghosh",
+        "Uttaran Bhattacharya",
+        "Aniket Bera"
+      ],
+      "published": "2026-11-19T19:05:06Z",
+      "updated": "2026-11-19T19:05:06Z",
+      "version": "2611.26706v1",
+      "url": "https://arxiv.org/abs/2611.26706v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27797",
+      "title": "EvoTER: Evolving Embodied Agents via Tool-Use Experience and Reflection",
+      "authors": [
+        "Yingting Zhou",
+        "Yuyin Zhou",
+        "Yongliang Wang",
+        "Haoran Li",
+        "Dongbin Zhao"
+      ],
+      "published": "2026-11-20T16:28:51Z",
+      "updated": "2026-11-20T16:28:51Z",
+      "version": "2611.27797v1",
+      "url": "https://arxiv.org/abs/2611.27797v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27164",
+      "title": "PhysForce: Physics-aware Force Control for Interactive Video World Model",
+      "authors": [
+        "Xuancheng Xu",
+        "Xiaofeng Wang",
+        "Yue Ma",
+        "Zheng Zhu",
+        "Bing-Kun Bao"
+      ],
+      "published": "2026-11-20T05:49:14Z",
+      "updated": "2026-11-20T05:49:14Z",
+      "version": "2611.27164v1",
+      "url": "https://arxiv.org/abs/2611.27164v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27011",
+      "title": "FoRe: A Force-Guided Framework for Autonomous Grasp Recovery in Vision-Language-Action Models",
+      "authors": [
+        "Shuai Peng",
+        "Yongkai Liao",
+        "Yuxin Cheng",
+        "Haoyuan Wang",
+        "Jian Huang"
+      ],
+      "published": "2026-11-20T02:39:15Z",
+      "updated": "2026-11-20T02:39:15Z",
+      "version": "2611.27011v1",
+      "url": "https://arxiv.org/abs/2611.27011v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26969",
+      "title": "RoboDyna: A Benchmark for Evaluating Robotic Manipulation under Physically Grounded Dynamics",
+      "authors": [
+        "Zhiyuan Li",
+        "Rui Heng Yang",
+        "Xuan Zhao",
+        "Amir Rasouli"
+      ],
+      "published": "2026-11-20T01:44:10Z",
+      "updated": "2026-11-20T01:44:10Z",
+      "version": "2611.26969v1",
+      "url": "https://arxiv.org/abs/2611.26969v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26825",
+      "title": "Skill-JEPA: Learning Planner-Aligned Action Spaces for World Models",
+      "authors": [
+        "Tomás Couso Coddou",
+        "Christ Devia",
+        "Rex G. Liu",
+        "Rodrigo Toro Icarte"
+      ],
+      "published": "2026-11-19T21:21:13Z",
+      "updated": "2026-11-19T21:21:13Z",
+      "version": "2611.26825v1",
+      "url": "https://arxiv.org/abs/2611.26825v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27182",
+      "title": "Tripwire: Robot Agents that Program Their Own Interrupts under Human Disturbance",
+      "authors": [
+        "Sunli Chen",
+        "Yun Zong",
+        "Qinhong Zhou",
+        "Xiaowen Qiu",
+        "Jiaben Chen",
+        "Zeyuan Yang",
+        "Chuang Gan"
+      ],
+      "published": "2026-11-20T06:12:51Z",
+      "updated": "2026-11-20T06:12:51Z",
+      "version": "2611.27182v1",
+      "url": "https://arxiv.org/abs/2611.27182v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27042",
+      "title": "RoboColiseum: Co-evolution of Simulation, Evaluation, and Models",
+      "authors": [
+        "Chenghao Yin",
+        "Da Huang",
+        "Di Yang",
+        "Jichao Wang",
+        "Junhui Wu",
+        "Nanshu Zhao",
+        "Tong Ran",
+        "Zhijun Li",
+        "Gang Zhao",
+        "Linting Guo",
+        "Rui Feng",
+        "Sheng Zhang",
+        "Tianyu Jiang",
+        "Wenjun Sun",
+        "Yongxin Su",
+        "Zhaobo Liu",
+        "Zheyuan Xing",
+        "Sukai Wang",
+        "Yue Zhou",
+        "Qihan Jiang",
+        "Jianhua Jiang",
+        "Chuang Men",
+        "Yuxiang Yan",
+        "Daizhen Lv",
+        "Kunyu Yu",
+        "Yongjian Shen",
+        "Tianxiang Zhu",
+        "Siying Zhang",
+        "Wenhao Wang",
+        "Jun Zhao",
+        "Bowen Jiang",
+        "Zhi Zeng",
+        "Maoqing Yao",
+        "Qian Wang"
+      ],
+      "published": "2026-11-20T03:14:26Z",
+      "updated": "2026-11-20T03:14:26Z",
+      "version": "2611.27042v1",
+      "url": "https://arxiv.org/abs/2611.27042v1",
+      "topics": [
+        "robotics",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26983",
+      "title": "Privacy Protection in Self-Evolving Personal Agents: Persistent Memory and Cross-Carrier Transfer",
+      "authors": [
+        "Zibin Lin",
+        "Taotao Wang",
+        "Shengli Zhang"
+      ],
+      "published": "2026-11-20T02:03:15Z",
+      "updated": "2026-11-20T02:03:15Z",
+      "version": "2611.26983v1",
+      "url": "https://arxiv.org/abs/2611.26983v1",
+      "topics": [
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26981",
+      "title": "ViewDreamer: A Robot World Model beyond Fixed Camera Setups",
+      "authors": [
+        "Ye Mao",
+        "Jinhui Xiong",
+        "Egor Larionov",
+        "Shiyang Lu",
+        "Krystian Mikolajczyk",
+        "Wei Ye"
+      ],
+      "published": "2026-11-20T01:58:31Z",
+      "updated": "2026-11-20T01:58:31Z",
+      "version": "2611.26981v1",
+      "url": "https://arxiv.org/abs/2611.26981v1",
+      "topics": [
+        "world-models",
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27418",
+      "title": "Beyond Future Views: Exploring Future-State World Models for Vision-Language Navigation",
+      "authors": [
+        "Kangyi Wu",
+        "Pengna Li",
+        "Yucheng Wang",
+        "Yance Fang",
+        "Xihan Ma",
+        "Zhizhong Su",
+        "Yang Wu",
+        "Ye Deng",
+        "Jinjun Wang",
+        "Jianyi Liu"
+      ],
+      "published": "2026-11-20T10:22:30Z",
+      "updated": "2026-11-20T10:22:30Z",
+      "version": "2611.27418v1",
+      "url": "https://arxiv.org/abs/2611.27418v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27344",
+      "title": "Learning Interaction Dynamics via Motion-Region Guidance for Robotic Video World Models",
+      "authors": [
+        "Yongkang He",
+        "Xiaofen Xing",
+        "Xiangmin Xu"
+      ],
+      "published": "2026-11-20T09:20:22Z",
+      "updated": "2026-11-20T09:20:22Z",
+      "version": "2611.27344v1",
+      "url": "https://arxiv.org/abs/2611.27344v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27963",
+      "title": "Non-penetrating World Models",
+      "authors": [
+        "Yuhang Dai",
+        "Yinwei Wu",
+        "Ziyue Lin",
+        "Han Ji",
+        "Xingyi Yang"
+      ],
+      "published": "2026-11-20T18:44:57Z",
+      "updated": "2026-11-20T18:44:57Z",
+      "version": "2611.27963v1",
+      "url": "https://arxiv.org/abs/2611.27963v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27939",
+      "title": "What Must a Model Tell a Planner? Outcome Interfaces for Risk-Aware Planning After Robot Damage",
+      "authors": [
+        "Hassan Iqbal",
+        "Krishna Kumar"
+      ],
+      "published": "2026-11-20T18:12:49Z",
+      "updated": "2026-11-20T18:12:49Z",
+      "version": "2611.27939v1",
+      "url": "https://arxiv.org/abs/2611.27939v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27780",
+      "title": "Search-RSI: Expanding Search Worlds Along Multimodal Agents' Capability Frontier",
+      "authors": [
+        "Chengchao Lv",
+        "Yin Wang",
+        "Chunzheng Zhu",
+        "Wanli Chang"
+      ],
+      "published": "2026-11-20T16:09:46Z",
+      "updated": "2026-11-20T16:09:46Z",
+      "version": "2611.27780v1",
+      "url": "https://arxiv.org/abs/2611.27780v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27639",
+      "title": "SOAR: Training-Free Rank-Consistent Rollout Compression for Latent World Model Planning",
+      "authors": [
+        "Anqi Li",
+        "Kai Liu",
+        "Linghe Kong",
+        "Yulun Zhang"
+      ],
+      "published": "2026-11-20T14:03:18Z",
+      "updated": "2026-11-20T14:03:18Z",
+      "version": "2611.27639v1",
+      "url": "https://arxiv.org/abs/2611.27639v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.26971",
+      "title": "RoboPRO: A Perturbation-Resilient and Obstacle-Aware Benchmark for Robotic Manipulation",
+      "authors": [
+        "Zhiyuan Li",
+        "Charles Eret",
+        "Dingsheng Liu",
+        "Xuan Zhao",
+        "Joshua Choi",
+        "Yangzheng Wu",
+        "Tongtong Cao",
+        "Yingxue Zhang",
+        "Amir Rasouli"
+      ],
+      "published": "2026-11-20T01:47:52Z",
+      "updated": "2026-11-20T01:47:52Z",
+      "version": "2611.26971v1",
+      "url": "https://arxiv.org/abs/2611.26971v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27513",
+      "title": "Ego4Gen: Generating Geometry-Grounded Motion Tokens as a World-Action Interface",
+      "authors": [
+        "Yang Liu",
+        "Chao Ye",
+        "Jiahao Zhang",
+        "Zeyuan Hou",
+        "Ruijie Fang",
+        "Xiyin Ni",
+        "Xinyang Ren",
+        "Weiyang Lin"
+      ],
+      "published": "2026-11-20T12:04:12Z",
+      "updated": "2026-11-20T12:04:12Z",
+      "version": "2611.27513v1",
+      "url": "https://arxiv.org/abs/2611.27513v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.27401",
+      "title": "Beyond Linear Decodability: Understanding and Improving Instruction Following in World Action Models",
+      "authors": [
+        "Bokai Ji",
+        "Jiapeng Chen",
+        "Yi Zhang",
+        "Zeyuan Ding",
+        "Yong Dai",
+        "Xiaozhu Ju",
+        "Jian Tang",
+        "Lemao Liu",
+        "Dejing Dou",
+        "Yong Li"
+      ],
+      "published": "2026-11-20T10:07:53Z",
+      "updated": "2026-11-20T10:07:53Z",
+      "version": "2611.27401v1",
+      "url": "https://arxiv.org/abs/2611.27401v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-23"
+    }
+  ],
+  "updates": [
+    {
+      "id": "2611.24938",
+      "title": "Phoenix: Learning Scene Structure Representations for Generalizable World-Action Models",
+      "authors": [
+        "Yupeng Zheng",
+        "Chaoyue Li",
+        "Linbo Wang",
+        "Xiang Li",
+        "Yuhang Zheng",
+        "Xiaotong Su",
+        "Songen Gu",
+        "Yichen Zhang",
+        "Zebin Xing",
+        "Shuai Tian",
+        "Jingxiang Guo",
+        "Jing Li",
+        "Zhiyong Zhao",
+        "Zhongpu Xia",
+        "Qichao Zhang",
+        "Haoran Li",
+        "Shuicheng Yan",
+        "Dongbin Zhao"
+      ],
+      "published": "2026-11-18T18:59:04Z",
+      "updated": "2026-11-20T05:03:55Z",
+      "version": "2611.24938v2",
+      "url": "https://arxiv.org/abs/2611.24938v2",
+      "topics": [],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.25105",
+      "title": "MAWAM: A Multi-Agent World-Action Model for Coordinated Manipulation",
+      "authors": [
+        "Xianzhe Fan",
+        "Chi-Pin Huang",
+        "Fu-En Yang",
+        "Jing Wang",
+        "Yecheng Wu",
+        "Yu-Cheng Chou",
+        "Johan Bjorck",
+        "Linxi \"Jim\" Fan",
+        "Jan Kautz",
+        "Yu-Chiang Frank Wang",
+        "Zhiding Yu",
+        "Hengshuang Zhao",
+        "Zhiqi Li"
+      ],
+      "published": "2026-11-18T19:39:30Z",
+      "updated": "2026-11-20T14:07:07Z",
+      "version": "2611.25105v2",
+      "url": "https://arxiv.org/abs/2611.25105v2",
+      "topics": [],
+      "announcementDate": "2026-11-23"
+    },
+    {
+      "id": "2611.25705",
+      "title": "STARK: Moving towards Personalized Agents That Truly Learn and Remember",
+      "authors": [
+        "Aryan Jain",
+        "Abhishek Jha",
+        "Anish Nediyanchath",
+        "Promod Yenigalla"
+      ],
+      "published": "2026-11-19T08:19:28Z",
+      "updated": "2026-11-20T10:18:34Z",
+      "version": "2611.25705v2",
+      "url": "https://arxiv.org/abs/2611.25705v2",
+      "topics": [],
+      "announcementDate": "2026-11-23"
+    }
+  ]
+}
