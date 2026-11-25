@@ -1,0 +1,357 @@
+{
+  "date": "2026-11-25",
+  "windowStart": "2026-11-23T04:38:21Z",
+  "windowEnd": "2026-11-25T16:12:10Z",
+  "summary": "15 篇候选、1 篇更新。优先关注 RESET 的仿真代码演化、LeanWAM 的 8×A100 训练记录，以及 Dreamcatcher 的冻结模型在线记忆。",
+  "priorities": [
+    {
+      "id": "2611.31894",
+      "label": "RESET",
+      "reason": "从单次示范构建并验证练习世界，离线演化技能代码；真实部署代码冻结，不是部署时持续学习。"
+    },
+    {
+      "id": "2611.31740",
+      "label": "LeanWAM",
+      "reason": "冻结视频教师，两阶段训练轻量策略；直接提供 8×A100 80GB 的训练记录。"
+    },
+    {
+      "id": "2611.31765",
+      "label": "Dreamcatcher",
+      "reason": "冻结世界模型的预测误差指导在线视频记忆；存储仍随历史增长，不是恒定总内存。"
+    }
+  ],
+  "reportMarkdown": "# 2026-11-25 每日论文发现\n\n本期去重后新增 **15 篇候选、1 篇版本更新**，不是新增完成精读。优先读 RESET、LeanWAM、Dreamcatcher：分别对应外部代码自改进、适合你现有 GPU 的训练型 WAM、冻结模型驱动的在线记忆。\n\n## 覆盖范围\n\n洛杉矶 11 月 25 日早间抓取。上一轮成功查询为 UTC 11 月 25 日 04:38，本轮 UTC 16:11–16:12；保留 48 小时交叠，元数据窗口从 **11 月 23 日 04:38 UTC** 起。采用 11 月 25 日 RSS 公告与精确版本核验：论文可以在 24 日提交、25 日才公告，不能仅按上次抓取时间过滤。\n\n五个 RSS 均成功，共 1,648 条分类记录；关键词去重匹配 224 条，人工限定候选池后留下 15 篇。API 只返回最近更新的 100 条，非全量覆盖；检索时间不等于提交时间。与此前候选记录及公开精读登记比对，无相同版本重复。本轮未穷尽全部关键词匹配项。\n\n| 主题 | 本期候选数（跨主题可重叠） | 短名单 | 方向优先 |\n| --- | --- | --- | --- |\n| 世界模型 | 4 | 3 | Dreamcatcher |\n| 机器人 | 4 | 3 | RESET |\n| Agent Memory | 4 | 3 | Dreamcatcher |\n| RSI | 3 | 3 | RESET |\n| 世界动作模型 | 3 | 3 | LeanWAM |\n\n## 1. RESET：先造一个可信的练习场，再让代码进化\n\n**RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments**\n\n作者：Zheng Sun、Zhuo Li、Zhihao Li、Hengyi Sim、Ge Wang、Ziyue Zhu、Mingkai Jia、Fei Chen。首次提交 2026-11-24；本期版本 2611.31894v1，修订 2026-11-24。主题：机器人 / RSI。发表状态：预印本，未核实正式录用。[官方记录](https://arxiv.org/abs/2611.31894v1)。代码仓库本轮未独立确认，不提供猜测链接。\n\n单次 RGB-D 示范被用来重建仿真世界、提取成功条件并检查重建是否可信。编程 Agent 随后依据失败位置修改任务图和技能代码，验证通过才保留。作者报告八项任务仿真平均成功率 97%；四种真实机器人共 280 次试验成功率 80%。这不是同一组实验，也不能把 97% 当实机成绩。部署时运行冻结代码，不调用 LLM；开发仍需要模型与仿真。成功判据有人确认一次，几何验证也不能识别全部质量、摩擦误差。导师视角：与你最相关的是“演化对象为程序”，但可复用练习环境本身也有成本。[§3、§4、Table 1](https://arxiv.org/html/2611.31894v1)\n\nEnglish: RESET evolves executable skills in reconstructed, checked simulation worlds and deploys frozen code. Its real-robot success is separate from simulated performance; criterion confirmation and reconstruction assumptions remain important.\n\n## 2. LeanWAM：你的 8 卡 A100 有直接可比的资源记录\n\n**LeanWAM: Learning Latent World Action Models from Frozen Video Models**\n\n作者：Shaolong Li、Hongze Fu、Joyce Chai、Yinpei Dai。首次提交 2026-11-24；本期版本 2611.31740v1，修订 2026-11-24。主题：世界动作模型。发表状态：预印本，未核实正式录用。[官方记录](https://arxiv.org/abs/2611.31740v1)。代码仓库本轮未独立确认，不提供猜测链接。\n\n先用冻结视频教师塑造紧凑预测表示，再蒸馏到轻量动作策略；因此仍要训练参数，不是仅更新记忆。论文的 LIBERO 两阶段训练使用 **8×A100 80GB，共约 30.4 小时**，排除缓存生成、骨干预训练和评估。单卡 A100 动作块延迟 **25.1 ms 是 JAX 实现**；PyTorch 为 63.1 ms，不能混报。已有结果主要在仿真基准，不能据此承诺真机效果。导师视角：这是值得核对复现的底座路线，不是新的自进化记忆方案。[§4–5、Appendix C.2/D、Tables 12–13](https://arxiv.org/html/2611.31740v1)\n\nEnglish: LeanWAM trains compact predictive modules and a policy while freezing the video teacher. Its reported eight-A100 training budget excludes preprocessing and evaluation. The fastest quoted latency is implementation-specific.\n\n## 3. Dreamcatcher：把预测外的细节优先记下来\n\n**Dreamcatcher: Remembering What Surprises a World Model in Video Streams**\n\n作者：Jinxi He、Ce Zhang、Wenhe Liu、Jianshu Zhang、Katia P. Sycara、Yaqi Xie。首次提交 2026-11-24；本期版本 2611.31765v1，修订 2026-11-24。主题：世界模型 / Agent Memory。发表状态：预印本，未核实正式录用。[官方记录](https://arxiv.org/abs/2611.31765v1)。代码仓库本轮未独立确认，不提供猜测链接。\n\n冻结世界模型预测下一段视觉特征，把预测误差转成惊讶程度，用来分段和保留视觉 token；提问时再判断哪些历史片段真正补充证据。世界模型、检索编码器和视频语言模型均冻结，更新的是记忆。OVO-Bench 上作者报告 Qwen3.8-27B 配置准确率 78.9%。注意：回答时读取量有界，不代表总存储恒定；附录预算含随时长线性增长项。导师视角：可以借鉴其“预测误差驱动写入”，但迁移到机器人需要另测任务收益，本文没有证明操作成功率改善。[§3–4、Appendix B.1](https://arxiv.org/html/2611.31765v1)\n\nEnglish: Dreamcatcher uses prediction surprise to allocate online visual memory with frozen models. Bounded evidence per query does not imply bounded lifetime storage, and video-QA gains do not establish robotic transfer.\n\n## 版本更新\n\n- [ThinkWAM: Rethinking Latent Futures for Action Refinement](https://arxiv.org/abs/2611.21258v5)：2611.21258v5，首次提交 2026-11-16，修订 2026-11-24。仅确认版本，不声称已核对差异。\n\n## 阅读边界\n\n三篇优先论文核对官方方法、实验或成本关键章节，其余仅摘要初筛。尚未完整审计所有附录、实现与统计显著性，质量评分缺失项保留 N/A。仅发布原创简述和元数据，不发布完整摘要、PDF、图片或全文译文，不更改已有精读状态。\n\n官方来源：[cs.RO RSS](https://rss.arxiv.org/rss/cs.RO)、[cs.AI RSS](https://rss.arxiv.org/rss/cs.AI)、[cs.CL RSS](https://rss.arxiv.org/rss/cs.CL)、[cs.LG RSS](https://rss.arxiv.org/rss/cs.LG)、[cs.CV RSS](https://rss.arxiv.org/rss/cs.CV)。[完整候选](#candidates) · [筛选附录](#screening)\n",
+  "appendixMarkdown": "# 2026-11-25 筛选附录\n\n按兴趣匹配建立每方向最多 10 篇有界候选，再收敛至最多 3 篇短名单与 1 篇优先；本期不凑满。五维权重为创新 30%、方法 25%、实验 25%、写作 10%、相关性 10%。证据未达到统一全文审计，前四项和加权总分为 N/A，不重新归一化。相关性 5/5 为主观阅读优先判断，不是质量认证。\n\n## 世界模型\n\n| 候选 | 入选依据与边界 |\n| --- | --- |\n| [CriticJEPA: World Models Are Better Critics Than Optimizers](https://arxiv.org/abs/2611.32357v1) | 让冻结世界模型为候选动作评分，并训练提案模型；冻结世界模型不等于全系统免训练。 |\n| [RoboProbe: Benchmarking Physical Plausibility of Robot World Models](https://arxiv.org/abs/2611.32152v1) | 用五类物理指标和工具检查生成机器人视频；物理合理性不能直接等同控制成功率。 |\n| [SceneMemBench: A Benchmark for Scene Memory in Interactive Video World Models](https://arxiv.org/abs/2611.31803v1) | 分开已见视角回忆与新视角恢复，并控制历史输入；适合诊断生成世界的记忆。 |\n| [Dreamcatcher: Remembering What Surprises a World Model in Video Streams](https://arxiv.org/abs/2611.31765v1) | 冻结世界模型的预测误差指导在线视频记忆；存储仍随历史增长，不是恒定总内存。 |\n\n| 短名单顺序 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [Dreamcatcher: Remembering What Surprises a World Model in Video Streams](https://arxiv.org/abs/2611.31765v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [CriticJEPA: World Models Are Better Critics Than Optimizers](https://arxiv.org/abs/2611.32357v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [SceneMemBench: A Benchmark for Scene Memory in Interactive Video World Models](https://arxiv.org/abs/2611.31803v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：Dreamcatcher: Remembering What Surprises a World Model in Video Streams。选择理由：冻结世界模型的预测误差指导在线视频记忆；存储仍随历史增长，不是恒定总内存。 排序兼顾当前冻结模型、机器人与记忆研究兴趣，不声称优于所有同类论文。\n\n## 机器人\n\n| 候选 | 入选依据与边界 |\n| --- | --- |\n| [RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments](https://arxiv.org/abs/2611.31894v1) | 从单次示范构建并验证练习世界，离线演化技能代码；真实部署代码冻结，不是部署时持续学习。 |\n| [VLAs Execute, Code Recovers: 3D Skill Envelopes Bridge the Compositional Gap in Agentic Manipulation](https://arxiv.org/abs/2611.32245v1) | 用策略实际扫过的三维空间检测技能衔接障碍；摘要明确部分自主编排与真实硬件仍为后续工作。 |\n| [CALVIN-MAX: When Does a Mid-Execution Change Hurt a Robot Policy?](https://arxiv.org/abs/2611.31868v1) | 三组配对运行分开世界变化本身与中途变化时机的影响；关注连续任务的后续代价。 |\n| [MXI-MemICL: Towards In-Context Robot Manipulation through Self-Retrieved Interaction Memory](https://arxiv.org/abs/2611.32564v1) | 把示范和交互变成可检索经验，预测下一阶段意图；无需额外大规模预训练不等于模块完全免训练。 |\n\n| 短名单顺序 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments](https://arxiv.org/abs/2611.31894v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [VLAs Execute, Code Recovers: 3D Skill Envelopes Bridge the Compositional Gap in Agentic Manipulation](https://arxiv.org/abs/2611.32245v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [CALVIN-MAX: When Does a Mid-Execution Change Hurt a Robot Policy?](https://arxiv.org/abs/2611.31868v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments。选择理由：从单次示范构建并验证练习世界，离线演化技能代码；真实部署代码冻结，不是部署时持续学习。 排序兼顾当前冻结模型、机器人与记忆研究兴趣，不声称优于所有同类论文。\n\n## Agent Memory\n\n| 候选 | 入选依据与边界 |\n| --- | --- |\n| [Leto: Utility-Centric Agent Memory](https://arxiv.org/abs/2611.33005v1) | 按对未来回答的效用优化记忆服务，而非只保存忠实记录；参数更新细节尚未全文核对。 |\n| [CoverMem: Coverage-Constrained Visual Memory for Budgeted Embodied Question Answering](https://arxiv.org/abs/2611.32119v1) | 在有限视觉预算下维持对象与场景覆盖，并检索互补帧；证据是具身问答，不是机器人控制。 |\n| [MXI-MemICL: Towards In-Context Robot Manipulation through Self-Retrieved Interaction Memory](https://arxiv.org/abs/2611.32564v1) | 把示范和交互变成可检索经验，预测下一阶段意图；无需额外大规模预训练不等于模块完全免训练。 |\n| [Dreamcatcher: Remembering What Surprises a World Model in Video Streams](https://arxiv.org/abs/2611.31765v1) | 冻结世界模型的预测误差指导在线视频记忆；存储仍随历史增长，不是恒定总内存。 |\n\n| 短名单顺序 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [Dreamcatcher: Remembering What Surprises a World Model in Video Streams](https://arxiv.org/abs/2611.31765v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [Leto: Utility-Centric Agent Memory](https://arxiv.org/abs/2611.33005v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [MXI-MemICL: Towards In-Context Robot Manipulation through Self-Retrieved Interaction Memory](https://arxiv.org/abs/2611.32564v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：Dreamcatcher: Remembering What Surprises a World Model in Video Streams。选择理由：冻结世界模型的预测误差指导在线视频记忆；存储仍随历史增长，不是恒定总内存。 排序兼顾当前冻结模型、机器人与记忆研究兴趣，不声称优于所有同类论文。\n\n## RSI\n\n| 候选 | 入选依据与边界 |\n| --- | --- |\n| [RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments](https://arxiv.org/abs/2611.31894v1) | 从单次示范构建并验证练习世界，离线演化技能代码；真实部署代码冻结，不是部署时持续学习。 |\n| [RecurSciBench: Benchmarking Recursive Self-Improvement in Data-Driven Scientific Research](https://arxiv.org/abs/2611.32508v1) | 独立任务评估 RSI 的同类型、跨类型和跨域迁移，提醒平均收益可掩盖单任务退化。 |\n| [OmniHarness-RSI: Modality-Aware Harness Evolution for Omnimodal Understanding](https://arxiv.org/abs/2611.32951v1) | 沿模态路由、证据定位与感知能力分解外部程序演化；证据来自多模态理解而非机器人。 |\n\n| 短名单顺序 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments](https://arxiv.org/abs/2611.31894v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [RecurSciBench: Benchmarking Recursive Self-Improvement in Data-Driven Scientific Research](https://arxiv.org/abs/2611.32508v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [OmniHarness-RSI: Modality-Aware Harness Evolution for Omnimodal Understanding](https://arxiv.org/abs/2611.32951v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments。选择理由：从单次示范构建并验证练习世界，离线演化技能代码；真实部署代码冻结，不是部署时持续学习。 排序兼顾当前冻结模型、机器人与记忆研究兴趣，不声称优于所有同类论文。\n\n## 世界动作模型\n\n| 候选 | 入选依据与边界 |\n| --- | --- |\n| [iWAM: Efficient Action Prediction from World Models without Explicit Future Prediction](https://arxiv.org/abs/2611.33141v1) | 用一次视频骨干计算提供动作条件特征，但先学习双向流映射；推理省算力不代表训练免费。 |\n| [PreWAM: Exploring the Design of Latent Future Prediction for World-Action Modeling](https://arxiv.org/abs/2611.31901v1) | 用结构化语义特征的残差和多时间尺度预测训练策略；关注视觉扰动下泛化。 |\n| [LeanWAM: Learning Latent World Action Models from Frozen Video Models](https://arxiv.org/abs/2611.31740v1) | 冻结视频教师，两阶段训练轻量策略；直接提供 8×A100 80GB 的训练记录。 |\n\n| 短名单顺序 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [LeanWAM: Learning Latent World Action Models from Frozen Video Models](https://arxiv.org/abs/2611.31740v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [iWAM: Efficient Action Prediction from World Models without Explicit Future Prediction](https://arxiv.org/abs/2611.33141v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [PreWAM: Exploring the Design of Latent Future Prediction for World-Action Modeling](https://arxiv.org/abs/2611.31901v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：LeanWAM: Learning Latent World Action Models from Frozen Video Models。选择理由：冻结视频教师，两阶段训练轻量策略；直接提供 8×A100 80GB 的训练记录。 排序兼顾当前冻结模型、机器人与记忆研究兴趣，不声称优于所有同类论文。\n\n## 元数据核验\n\n官方 Atom API 按 RSS 精确版本查询；去重依据规范化 arXiv ID 和已推荐版本。作者列表与日期在候选卡片展示。ThinkWAM 更新单列，未读取版本差异；其他 15 篇尚未完成全文精读。非主题匹配（例如缓存压缩、同名缩写）不凭关键词直接推荐。API 有数量上限，未纳入不代表不存在相关工作。\n",
+  "candidates": [
+    {
+      "id": "2611.31894",
+      "version": "2611.31894v1",
+      "title": "RESET: One Demonstration, One Verified World, Self-Improved Skills Across Embodiments",
+      "published": "2026-11-24T03:54:11Z",
+      "updated": "2026-11-24T03:54:11Z",
+      "authors": [
+        "Zheng Sun",
+        "Zhuo Li",
+        "Zhihao Li",
+        "Hengyi Sim",
+        "Ge Wang",
+        "Ziyue Zhu",
+        "Mingkai Jia",
+        "Fei Chen"
+      ],
+      "url": "https://arxiv.org/abs/2611.31894v1",
+      "topics": [
+        "robotics",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.31868",
+      "version": "2611.31868v1",
+      "title": "CALVIN-MAX: When Does a Mid-Execution Change Hurt a Robot Policy?",
+      "published": "2026-11-24T03:18:32Z",
+      "updated": "2026-11-24T03:18:32Z",
+      "authors": [
+        "Sajjad Pakdamansavoji"
+      ],
+      "url": "https://arxiv.org/abs/2611.31868v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.31765",
+      "version": "2611.31765v1",
+      "title": "Dreamcatcher: Remembering What Surprises a World Model in Video Streams",
+      "published": "2026-11-24T01:15:41Z",
+      "updated": "2026-11-24T01:15:41Z",
+      "authors": [
+        "Jinxi He",
+        "Ce Zhang",
+        "Wenhe Liu",
+        "Jianshu Zhang",
+        "Katia P. Sycara",
+        "Yaqi Xie"
+      ],
+      "url": "https://arxiv.org/abs/2611.31765v1",
+      "topics": [
+        "world-models",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.33141",
+      "version": "2611.33141v1",
+      "title": "iWAM: Efficient Action Prediction from World Models without Explicit Future Prediction",
+      "published": "2026-11-24T18:56:04Z",
+      "updated": "2026-11-24T18:56:04Z",
+      "authors": [
+        "Vansh Kapoor",
+        "Max Sobol Mark",
+        "Sreyas Venkataraman",
+        "Max Simchowitz",
+        "Aviral Kumar"
+      ],
+      "url": "https://arxiv.org/abs/2611.33141v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.31803",
+      "version": "2611.31803v1",
+      "title": "SceneMemBench: A Benchmark for Scene Memory in Interactive Video World Models",
+      "published": "2026-11-24T01:56:13Z",
+      "updated": "2026-11-24T01:56:13Z",
+      "authors": [
+        "Yuheng Si",
+        "Linye Lyu",
+        "Jiawei Zhou",
+        "Lingyi Du",
+        "Nanfei Ye",
+        "Aobo Liu",
+        "Yu Liu",
+        "Yu Li",
+        "Cheng Zhuo"
+      ],
+      "url": "https://arxiv.org/abs/2611.31803v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.32357",
+      "version": "2611.32357v1",
+      "title": "CriticJEPA: World Models Are Better Critics Than Optimizers",
+      "published": "2026-11-24T10:30:16Z",
+      "updated": "2026-11-24T10:30:16Z",
+      "authors": [
+        "Xvyuan Liu",
+        "Jianjie Fang",
+        "Honglin Zhang",
+        "Zhaolu Wang",
+        "Xin Zhang",
+        "Wei Wu",
+        "Fengli Xu",
+        "Chen Gao",
+        "Yong Li"
+      ],
+      "url": "https://arxiv.org/abs/2611.32357v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.32245",
+      "version": "2611.32245v1",
+      "title": "VLAs Execute, Code Recovers: 3D Skill Envelopes Bridge the Compositional Gap in Agentic Manipulation",
+      "published": "2026-11-24T09:21:57Z",
+      "updated": "2026-11-24T09:21:57Z",
+      "authors": [
+        "Jiajie Zhang",
+        "Yankai Xiang",
+        "Changhao Chen"
+      ],
+      "url": "https://arxiv.org/abs/2611.32245v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.31901",
+      "version": "2611.31901v1",
+      "title": "PreWAM: Exploring the Design of Latent Future Prediction for World-Action Modeling",
+      "published": "2026-11-24T03:59:44Z",
+      "updated": "2026-11-24T03:59:44Z",
+      "authors": [
+        "Wan Chi",
+        "Sen Li",
+        "Zihang Cui",
+        "Chuqin Huang",
+        "Yunlong Wang",
+        "Nanshan Deng",
+        "Yanjun Huang"
+      ],
+      "url": "https://arxiv.org/abs/2611.31901v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.32951",
+      "version": "2611.32951v1",
+      "title": "OmniHarness-RSI: Modality-Aware Harness Evolution for Omnimodal Understanding",
+      "published": "2026-11-24T16:53:27Z",
+      "updated": "2026-11-24T16:53:27Z",
+      "authors": [
+        "Shilin Ma",
+        "Xingming Shui",
+        "Jinglin Chen",
+        "Zetong Zhao",
+        "Jingqi Tian",
+        "Deyi Zhu",
+        "Yansong Tang"
+      ],
+      "url": "https://arxiv.org/abs/2611.32951v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.33005",
+      "version": "2611.33005v1",
+      "title": "Leto: Utility-Centric Agent Memory",
+      "published": "2026-11-24T17:30:06Z",
+      "updated": "2026-11-24T17:30:06Z",
+      "authors": [
+        "Shuguang Chen",
+        "Salman Paracha"
+      ],
+      "url": "https://arxiv.org/abs/2611.33005v1",
+      "topics": [
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.32508",
+      "version": "2611.32508v1",
+      "title": "RecurSciBench: Benchmarking Recursive Self-Improvement in Data-Driven Scientific Research",
+      "published": "2026-11-24T12:38:22Z",
+      "updated": "2026-11-24T12:38:22Z",
+      "authors": [
+        "Wenxi Xu",
+        "Chuan Qin",
+        "Zihan Wang",
+        "Zixing Chen",
+        "Le Zhang",
+        "Jingbo Zhou",
+        "Hao Wang",
+        "Yuanchun Zhou",
+        "Hengshu Zhu"
+      ],
+      "url": "https://arxiv.org/abs/2611.32508v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.32564",
+      "version": "2611.32564v1",
+      "title": "MXI-MemICL: Towards In-Context Robot Manipulation through Self-Retrieved Interaction Memory",
+      "published": "2026-11-24T13:12:01Z",
+      "updated": "2026-11-24T13:12:01Z",
+      "authors": [
+        "Jialong Peng",
+        "Shihao Zhou",
+        "Feng Yan",
+        "Wen Xiao",
+        "Haozheng Wang",
+        "Wenqi Ren",
+        "Wenyuan Sheng",
+        "Jian Qiao",
+        "Jiaxu Miao",
+        "Lin Ma",
+        "Chao Yang"
+      ],
+      "url": "https://arxiv.org/abs/2611.32564v1",
+      "topics": [
+        "robotics",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.31740",
+      "version": "2611.31740v1",
+      "title": "LeanWAM: Learning Latent World Action Models from Frozen Video Models",
+      "published": "2026-11-24T00:50:08Z",
+      "updated": "2026-11-24T00:50:08Z",
+      "authors": [
+        "Shaolong Li",
+        "Hongze Fu",
+        "Joyce Chai",
+        "Yinpei Dai"
+      ],
+      "url": "https://arxiv.org/abs/2611.31740v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.32152",
+      "version": "2611.32152v1",
+      "title": "RoboProbe: Benchmarking Physical Plausibility of Robot World Models",
+      "published": "2026-11-24T08:06:52Z",
+      "updated": "2026-11-24T08:06:52Z",
+      "authors": [
+        "Zhuoying Yang",
+        "Jiachen Ni",
+        "Yichen Guo",
+        "Xiaoshan Wu",
+        "Mengyu Wang"
+      ],
+      "url": "https://arxiv.org/abs/2611.32152v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-25"
+    },
+    {
+      "id": "2611.32119",
+      "version": "2611.32119v1",
+      "title": "CoverMem: Coverage-Constrained Visual Memory for Budgeted Embodied Question Answering",
+      "published": "2026-11-24T07:36:40Z",
+      "updated": "2026-11-24T07:36:40Z",
+      "authors": [
+        "Ruijie Ma",
+        "Haoyue Liu",
+        "Mingda Zhang",
+        "Dongxu Yue",
+        "Xiaoying Tang"
+      ],
+      "url": "https://arxiv.org/abs/2611.32119v1",
+      "topics": [
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-25"
+    }
+  ],
+  "updates": [
+    {
+      "id": "2611.21258",
+      "version": "2611.21258v5",
+      "title": "ThinkWAM: Rethinking Latent Futures for Action Refinement",
+      "published": "2026-11-16T15:30:51Z",
+      "updated": "2026-11-24T06:48:46Z",
+      "authors": [
+        "Haoyun Tang",
+        "Baqiao Deng",
+        "Enjin Zhou",
+        "Songwen Tian",
+        "Keyao Xu",
+        "Bowen Jing",
+        "Kun Wang",
+        "Ke Ma",
+        "Zhandong Mei",
+        "Huibin Li"
+      ],
+      "url": "https://arxiv.org/abs/2611.21258v5",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-25"
+    }
+  ]
+}
