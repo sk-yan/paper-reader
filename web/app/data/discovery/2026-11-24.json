@@ -1,0 +1,501 @@
+{
+  "date": "2026-11-24",
+  "windowStart": "2026-11-20T19:00:00Z",
+  "windowEnd": "2026-11-25T04:40:00Z",
+  "summary": "17 篇新候选、3 篇版本更新。重点看实时机器人记忆、冻结策略的自改进接管机制，以及混合记忆 WAM；明确区分开发期演化、测试期适应和训练成本。",
+  "priorities": [
+    {
+      "id": "2611.30047",
+      "label": "RoboLiveMem",
+      "reason": "评测先排除暂停世界造成的虚高，区分记忆与观测过时。"
+    },
+    {
+      "id": "2611.30101",
+      "label": "Agent on Guard",
+      "reason": "冻结策略与可演化外部程序最贴近当前方向，测试边界明确。"
+    },
+    {
+      "id": "2611.28943",
+      "label": "SANA-Robot",
+      "reason": "训练型混合记忆 WAM 与异步控制的实用参照。"
+    }
+  ],
+  "reportMarkdown": "# 2026-11-24 每日论文发现\n\n本期围绕世界模型、机器人、Agent Memory、RSI 和世界动作模型，整理 **17 篇新候选、3 篇旧稿更新**。每日发现是阅读导航，不是全文翻译或 13 章精读；未改动已有精读状态。\n\n## 今天先读这三篇\n\n### 1. RoboLiveMem：记住了，不代表行动时还正确\n\n机器人思考时，环境会不会继续变化？该基准把同一任务放在暂停与持续运行两种时钟下，并设置可见状态对照，拆分遗忘、观测过时与决策延迟。作者报告：在现实风格仿真中、记忆对象发生变化的子集上，八个 Claude/GPT 模型平均成功率从约 97% 降至 50%；这不是所有任务的总体平均。导师视角：先检查评测是否给了机器人“免费思考时间”，再讨论记忆模块优劣。研究迁移建议：把观测年龄与执行前复查加入后续消融；这是建议，不是本文已完成的机器人跨回合学习实验。[原文 §3、§5、Table 3](https://arxiv.org/html/2611.30047v1)\n\nEnglish: RoboLiveMem separates memory failures from stale observations and latency by comparing paused and live simulation. It is an evaluation protocol, not a cross-episode learning algorithm. The reported 97% to 50% drop concerns a specific realistic event subset.\n\n### 2. Agent on Guard：学的不只是修复技能，还有接管与交还时机\n\nAoG 让冻结策略继续执行，由编程 Agent 根据反馈改进介入规则、恢复程序和交还条件。RoboDojo-Sim 的宏平均成功率为 50.57%，比最强已评估基线高 11.22 个百分点。关键边界：模型权重在 RSI 中冻结，但共享指导与经验到测试时也冻结，不跨测试回合更新。因此，它不能直接当作“部署中越做越好”的证据。另一个成本陷阱是论文的在线效率比较排除了 RSI 开发成本。[原文 §3.3、§4.1、Tables 1/3](https://arxiv.org/html/2611.30101v1)\n\nEnglish: AoG evolves coordination around frozen models. Its shared harness and experience are fixed during evaluation; episode-local adaptation remains allowed. Reported deployment savings exclude the preceding RSI process, so they are not total development-cost savings.\n\n### 3. SANA-Robot：把有记忆的 WAM 做到能持续执行\n\n4.5B 模型用固定大小的循环状态保留历史，再配合滑窗注意力，避免历史越长推理越贵。它需要训练，不是给冻结策略外挂文本经验库。作者在 RTX 5090 上报告每个动作块 115 ms（NVFP4），并通过异步执行达到 30 Hz 控制；30 Hz 不代表每秒完成 30 次完整模型推理。导师视角：这里的记忆主要解决同一任务历史依赖，和跨任务技能积累是不同问题。你的 A100 不能直接套用该量化路径的延迟数字。[原文 §2、§4–5、§8](https://arxiv.org/html/2611.28943v1)\n\nEnglish: SANA-Robot combines recurrent and sliding-window memory in a trained WAM. Its asynchronous control rate differs from model inference frequency. Hardware-specific low-precision latency should not be transferred directly to an A100 setup.\n\n## 两篇补充阅读\n\n### RecallWorld：世界模型也要认得回去的路\n\n短片段多视图组成 Scenelet，片段之间的几何独立保存；重访时选取互补片段并先解决可见性，再生成画面。作者在四个数据集报告重访保真度提升。值得借鉴的是记忆分组与错误隔离，而不是把图像质量改善直接解释为操作能力提升。[原文 §3–5](https://arxiv.org/html/2611.28666v1)\n\nEnglish: RecallWorld preserves scene identity through episodic geometric memory. Its evidence concerns generated revisits; downstream manipulation improvements require separate evaluation.\n\n### MORSE：记忆程序不会写，就检索已有方法来改\n\n编辑器从重复失败出发，检索论文和工具，修改流视频的记忆写入与检索程序；回答模型冻结，并通过验证集筛选程序改动。OVO-Bench 上 Qwen3-VL-8B 配置报告 75.1% 准确率。它提供了“外部程序演化”的参照，但流视频问答不是机器人操作，工具接入与评估数据隔离也需要单独审计。[原文 §3–4、Appendix A/B](https://arxiv.org/html/2611.30011v1)\n\nEnglish: MORSE optimizes a streaming-memory harness through external research and validation around a frozen reader. Its video-QA gains do not establish robotic transfer or cost-free online adaptation.\n\n## 五个方向怎么选\n\n| 方向 | 本期优先 | 接下来重点核对 |\n| --- | --- | --- |\n| 世界模型 | RecallWorld | 几何记忆怎样隔离生成错误 |\n| 机器人 | Agent on Guard | 干预、恢复、交还的时间预算 |\n| Agent Memory | RoboLiveMem | 遗忘和观测过时是否被分开 |\n| RSI | Agent on Guard | 开发期演化与测试期冻结的边界 |\n| 世界动作模型 | SANA-Robot | 训练成本、状态维护与端到端延迟 |\n\n## 旧论文有更新，但未审计版本差异\n\n- [Mem-X: A Memory-Dependent Cross-Episode Benchmark for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27166v2)：2611.27166v2；修订日期 2026-11-23。\n- [LoopedWAM: Looped World Action Models for Elastic Inference](https://arxiv.org/abs/2611.25595v2)：2611.25595v2；修订日期 2026-11-21。\n- [Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation](https://arxiv.org/abs/2611.27689v2)：2611.27689v2；修订日期 2026-11-23。\n\n以上仅确认新版本存在，未声称增加了实验或修复了特定问题。当天 RSS 版本已锁定，避免把稍后的更新误记到本期。\n\n## 范围、时间和证据限制\n\n- 简报按洛杉矶 **11 月 24 日**记；抓取发生在当地晚间（UTC 11 月 25 日 04:38 左右）。\n- 本期采用 arXiv **11 月 24 日公告批次**，论文首次提交可早于公告日。元数据回溯窗口为 11 月 20 日 19:00 UTC 起，不把旧提交伪装成当天提交。\n- 已检查 cs.RO、cs.AI、cs.CL、cs.LG、cs.CV 五个 RSS：共 2,795 条分类记录，关键词匹配去重后 388 条。这不是 388 篇最终相关论文，也不是全网覆盖。\n- API 补充查询只取最近更新的 100 条，不穷尽所有结果。本期只纳入已核对的当前 RSS 候选；API 中更晚的未公告记录不混入。\n- 每方向保留 5 篇有界候选，再选 3 篇短名单与 1 篇优先；跨方向合并后 17 篇。排名是研究兴趣匹配，不是统一实验比较。\n- 推荐论文核对了官方摘要及所引用的关键章节；其他候选以官方摘要初筛。没有完成所有全文、附录、代码、种子与显著性审计，也未确认会议录用。\n- 来源：[arXiv cs.RO RSS](https://rss.arxiv.org/rss/cs.RO)、[cs.AI RSS](https://rss.arxiv.org/rss/cs.AI)、[cs.CL RSS](https://rss.arxiv.org/rss/cs.CL)、[cs.LG RSS](https://rss.arxiv.org/rss/cs.LG)、[cs.CV RSS](https://rss.arxiv.org/rss/cs.CV)。\n\n[查看筛选依据与短名单](#screening) · [查看全部候选](#candidates)\n",
+  "appendixMarkdown": "# 筛选附录：2026-11-24\n\n## 筛选规则\n\n先按官方摘要排除不相关内容，再为五个方向各保留 5 篇候选，形成 3 篇短名单和 1 篇优先阅读。跨方向论文按 arXiv ID 去重。此前已登记候选与 18 篇精读库记录均做了 ID 比对；新增 17 篇没有重复。与同名缩写或相近标题论文分开登记。\n\n质量维度沿用创新性 30%、方法完整性 25%、实验充分性 25%、写作 10%、相关性 10%。本轮没有完成统一全文审计，前四项及加权总分标为 N/A；相关性分数仅是编辑判断。**不把不完整分数重新归一化，也不把 N/A 当成零分。** 以下顺序按本库研究方向安排，并非论文质量排行榜。\n\n## 世界模型：候选 5 → 短名单 3 → 优先 1\n\n| 候选 | 入选理由与需警惕之处 |\n| --- | --- |\n| [RecallWorld: Episodic Memory for Persistent Embodied Video World Models](https://arxiv.org/abs/2611.28666v1) | 把相邻视图组织为独立几何记忆单元，重点看重访一致性；不能直接等同于机器人任务成功率。 |\n| [SANA-Robot: Efficient World Action Model with Hybrid Memory](https://arxiv.org/abs/2611.28943v1) | 训练型混合记忆 WAM，兼顾长历史与推理效率；不是零梯度跨回合技能积累。 |\n| [Two Actions from One State: Fork Futures Teach JEPA World Models to Compare](https://arxiv.org/abs/2611.28350v1) | 从同一状态执行替代动作，补足反事实动作效果监督；需评估额外数据获取成本。 |\n| [JEPA-Shield: Safe Diffusion Planning with Latent World Models via Conformal Shielding](https://arxiv.org/abs/2611.29609v1) | 把隐空间预测接到物理约束检查；概率保证有交换性等前提，不等于闭环绝对安全。 |\n| [SilentWAM: Planning in the Masked State of a Diffusion World Model](https://arxiv.org/abs/2611.29125v1) | 从被遮蔽未来 token 的隐状态直接预测驾驶轨迹；属于驾驶方向，不是机械臂证据。 |\n\n| 短名单 | 创新 30% | 方法 25% | 实验 25% | 写作 10% | 相关性 10% | 加权总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [RecallWorld: Episodic Memory for Persistent Embodied Video World Models](https://arxiv.org/abs/2611.28666v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [SANA-Robot: Efficient World Action Model with Hybrid Memory](https://arxiv.org/abs/2611.28943v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [Two Actions from One State: Fork Futures Teach JEPA World Models to Compare](https://arxiv.org/abs/2611.28350v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n首选 RecallWorld：直接围绕世界模型的长时一致性设计记忆，适合厘清生成世界中的 memory 与策略经验库的区别。\n\n## 机器人：候选 5 → 短名单 3 → 优先 1\n\n| 候选 | 入选理由与需警惕之处 |\n| --- | --- |\n| [RoboLiveMem: Is Robot Memory Solved When the World Does Not Wait?](https://arxiv.org/abs/2611.30047v1) | 对比暂停世界与持续运行世界，区分记忆、观测过时和推理延迟。 |\n| [Agent on Guard: Self-Improving Runtime Intervention for Robust Robotic Manipulation](https://arxiv.org/abs/2611.30101v1) | 冻结策略与编程 Agent 协同演化接管、修复与交还规则；测试时共享经验冻结。 |\n| [SANA-Robot: Efficient World Action Model with Hybrid Memory](https://arxiv.org/abs/2611.28943v1) | 训练型混合记忆 WAM，兼顾长历史与推理效率；不是零梯度跨回合技能积累。 |\n| [Contact Harness: Enabling VLM Agents to Perform Contact-Rich Manipulation](https://arxiv.org/abs/2611.29377v1) | 把力觉与触觉按接触阶段解释给 VLM，并配合柔顺控制；关注传感与接口成本。 |\n| [Embo-Harness: Towards Understanding Frontier-Model-as-Policy Harness](https://arxiv.org/abs/2611.31201v1) | 拆解 frontier-model-as-policy 的提示、规划、动作与工具接口；不是昨日 Embodied-Harness 的同一篇。 |\n\n| 短名单 | 创新 30% | 方法 25% | 实验 25% | 写作 10% | 相关性 10% | 加权总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [Agent on Guard: Self-Improving Runtime Intervention for Robust Robotic Manipulation](https://arxiv.org/abs/2611.30101v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [RoboLiveMem: Is Robot Memory Solved When the World Does Not Wait?](https://arxiv.org/abs/2611.30047v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [Contact Harness: Enabling VLM Agents to Perform Contact-Rich Manipulation](https://arxiv.org/abs/2611.29377v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n首选 Agent on Guard：问题和冻结策略＋可演化外部程序最接近，而且明确说明测试阶段经验边界。\n\n## Agent Memory：候选 5 → 短名单 3 → 优先 1\n\n| 候选 | 入选理由与需警惕之处 |\n| --- | --- |\n| [RoboLiveMem: Is Robot Memory Solved When the World Does Not Wait?](https://arxiv.org/abs/2611.30047v1) | 对比暂停世界与持续运行世界，区分记忆、观测过时和推理延迟。 |\n| [RecallWorld: Episodic Memory for Persistent Embodied Video World Models](https://arxiv.org/abs/2611.28666v1) | 把相邻视图组织为独立几何记忆单元，重点看重访一致性；不能直接等同于机器人任务成功率。 |\n| [SANA-Robot: Efficient World Action Model with Hybrid Memory](https://arxiv.org/abs/2611.28943v1) | 训练型混合记忆 WAM，兼顾长历史与推理效率；不是零梯度跨回合技能积累。 |\n| [MMMem: Self-Improving Agents with Task-Aware Multimodal Experience Consolidation](https://arxiv.org/abs/2611.30287v1) | 外部经验巩固结合参数自训练；不能归为纯冻结模型记忆方法。 |\n| [MORSE: Optimizing Streaming Memory Design via Open-World Auto-Research](https://arxiv.org/abs/2611.30011v1) | 自动检索研究与工具来修改流视频记忆程序；在线读写与开发阶段代码演化须分开。 |\n\n| 短名单 | 创新 30% | 方法 25% | 实验 25% | 写作 10% | 相关性 10% | 加权总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [RoboLiveMem: Is Robot Memory Solved When the World Does Not Wait?](https://arxiv.org/abs/2611.30047v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [MORSE: Optimizing Streaming Memory Design via Open-World Auto-Research](https://arxiv.org/abs/2611.30011v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [MMMem: Self-Improving Agents with Task-Aware Multimodal Experience Consolidation](https://arxiv.org/abs/2611.30287v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n首选 RoboLiveMem：先检验记忆评测是否忽略物理时间，再判断新记忆模块是否真正解决问题。\n\n## RSI：候选 5 → 短名单 3 → 优先 1\n\n| 候选 | 入选理由与需警惕之处 |\n| --- | --- |\n| [Agent on Guard: Self-Improving Runtime Intervention for Robust Robotic Manipulation](https://arxiv.org/abs/2611.30101v1) | 冻结策略与编程 Agent 协同演化接管、修复与交还规则；测试时共享经验冻结。 |\n| [MMMem: Self-Improving Agents with Task-Aware Multimodal Experience Consolidation](https://arxiv.org/abs/2611.30287v1) | 外部经验巩固结合参数自训练；不能归为纯冻结模型记忆方法。 |\n| [MORSE: Optimizing Streaming Memory Design via Open-World Auto-Research](https://arxiv.org/abs/2611.30011v1) | 自动检索研究与工具来修改流视频记忆程序；在线读写与开发阶段代码演化须分开。 |\n| [Blind to What They Can Fix: A Detection Gap in Self-Improving Agents](https://arxiv.org/abs/2611.29807v1) | 研究程序能修好却未能发现失败的问题；适合作为 RSI 监测指标的补充。 |\n| [Demystifying the Autoresearch Harness: How Context and Skills Shape Self-Evolving Agents](https://arxiv.org/abs/2611.28244v1) | 控制实验拆解上下文与技能管理；实验域是科研与算子优化，不是机器人。 |\n\n| 短名单 | 创新 30% | 方法 25% | 实验 25% | 写作 10% | 相关性 10% | 加权总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [Agent on Guard: Self-Improving Runtime Intervention for Robust Robotic Manipulation](https://arxiv.org/abs/2611.30101v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [MORSE: Optimizing Streaming Memory Design via Open-World Auto-Research](https://arxiv.org/abs/2611.30011v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [Blind to What They Can Fix: A Detection Gap in Self-Improving Agents](https://arxiv.org/abs/2611.29807v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n首选 Agent on Guard：演化对象、反馈来源和执行时序均较具体；MORSE 作为非机器人域参照。\n\n## 世界动作模型：候选 5 → 短名单 3 → 优先 1\n\n| 候选 | 入选理由与需警惕之处 |\n| --- | --- |\n| [SANA-Robot: Efficient World Action Model with Hybrid Memory](https://arxiv.org/abs/2611.28943v1) | 训练型混合记忆 WAM，兼顾长历史与推理效率；不是零梯度跨回合技能积累。 |\n| [Entangle: Scaling Human-Video In-Context World-Action Models across Unseen Tasks and Contexts](https://arxiv.org/abs/2611.28732v1) | 用人类示范视频做上下文，训练时构造对齐数据并抑制任务捷径；免任务微调不等于免训练。 |\n| [FlexWAM: Learning Flexible Visual Routing for World Action Models](https://arxiv.org/abs/2611.30024v1) | 依当前观测动态选择多相机证据；视角归因来自动作损失敏感性。 |\n| [Calibrating World Action Models: From Adaptive System 2 Takeover to Self-Evolution](https://arxiv.org/abs/2611.30188v1) | 训练置信评估并把接管轨迹蒸馏回 WAM；最后阶段更新策略参数。 |\n| [MAWAM: Joint Imagination for Collaborative Robot Manipulation with a Multi-Agent World Action Model](https://arxiv.org/abs/2611.29501v1) | 联合想象多个机器人的未来并预测各自动作；与 2611.25105 的同名缩写论文分开记录。 |\n\n| 短名单 | 创新 30% | 方法 25% | 实验 25% | 写作 10% | 相关性 10% | 加权总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [SANA-Robot: Efficient World Action Model with Hybrid Memory](https://arxiv.org/abs/2611.28943v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [Entangle: Scaling Human-Video In-Context World-Action Models across Unseen Tasks and Contexts](https://arxiv.org/abs/2611.28732v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [FlexWAM: Learning Flexible Visual Routing for World Action Models](https://arxiv.org/abs/2611.30024v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n首选 SANA-Robot：把记忆设计与执行效率放在一起讨论，适合作为有训练成本的底座路线参照。\n\n## 精确元数据与版本\n\n所有记录均从官方 Atom API 按 RSS 所列版本核对。日期不是本地文件创建时间；标题、作者、首次提交与修订日期保留原始字段。正文卡片提供完整作者列表。\n\n| 论文 | 版本 | 首次提交 UTC | 修订 UTC | 本期分类 |\n| --- | --- | --- | --- | --- |\n| [Entangle: Scaling Human-Video In-Context World-Action Models across Unseen Tasks and Contexts](https://arxiv.org/abs/2611.28732v1) | 2611.28732v1 | 2026-11-21T10:58:36Z | 2026-11-21T10:58:36Z | 新候选；未完成全文精读 |\n| [Mem-X: A Memory-Dependent Cross-Episode Benchmark for Vision-and-Language Navigation](https://arxiv.org/abs/2611.27166v2) | 2611.27166v2 | 2026-11-20T05:51:31Z | 2026-11-23T05:05:05Z | 旧稿更新；未审计差异 |\n| [Demystifying the Autoresearch Harness: How Context and Skills Shape Self-Evolving Agents](https://arxiv.org/abs/2611.28244v1) | 2611.28244v1 | 2026-11-20T19:22:41Z | 2026-11-20T19:22:41Z | 新候选；未完成全文精读 |\n| [Embo-Harness: Towards Understanding Frontier-Model-as-Policy Harness](https://arxiv.org/abs/2611.31201v1) | 2611.31201v1 | 2026-11-23T18:48:54Z | 2026-11-23T18:48:54Z | 新候选；未完成全文精读 |\n| [LoopedWAM: Looped World Action Models for Elastic Inference](https://arxiv.org/abs/2611.25595v2) | 2611.25595v2 | 2026-11-19T06:42:13Z | 2026-11-21T18:23:53Z | 旧稿更新；未审计差异 |\n| [SilentWAM: Planning in the Masked State of a Diffusion World Model](https://arxiv.org/abs/2611.29125v1) | 2611.29125v1 | 2026-11-22T01:16:00Z | 2026-11-22T01:16:00Z | 新候选；未完成全文精读 |\n| [MMMem: Self-Improving Agents with Task-Aware Multimodal Experience Consolidation](https://arxiv.org/abs/2611.30287v1) | 2611.30287v1 | 2026-11-23T08:44:23Z | 2026-11-23T08:44:23Z | 新候选；未完成全文精读 |\n| [MORSE: Optimizing Streaming Memory Design via Open-World Auto-Research](https://arxiv.org/abs/2611.30011v1) | 2611.30011v1 | 2026-11-23T04:11:45Z | 2026-11-23T04:11:45Z | 新候选；未完成全文精读 |\n| [Contact Harness: Enabling VLM Agents to Perform Contact-Rich Manipulation](https://arxiv.org/abs/2611.29377v1) | 2611.29377v1 | 2026-11-22T10:38:23Z | 2026-11-22T10:38:23Z | 新候选；未完成全文精读 |\n| [Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation](https://arxiv.org/abs/2611.27689v2) | 2611.27689v2 | 2026-11-20T14:55:07Z | 2026-11-23T03:37:11Z | 旧稿更新；未审计差异 |\n| [JEPA-Shield: Safe Diffusion Planning with Latent World Models via Conformal Shielding](https://arxiv.org/abs/2611.29609v1) | 2611.29609v1 | 2026-11-22T17:00:07Z | 2026-11-22T17:00:07Z | 新候选；未完成全文精读 |\n| [Agent on Guard: Self-Improving Runtime Intervention for Robust Robotic Manipulation](https://arxiv.org/abs/2611.30101v1) | 2611.30101v1 | 2026-11-23T05:58:26Z | 2026-11-23T05:58:26Z | 新候选；未完成全文精读 |\n| [SANA-Robot: Efficient World Action Model with Hybrid Memory](https://arxiv.org/abs/2611.28943v1) | 2611.28943v1 | 2026-11-21T17:23:39Z | 2026-11-21T17:23:39Z | 新候选；未完成全文精读 |\n| [Blind to What They Can Fix: A Detection Gap in Self-Improving Agents](https://arxiv.org/abs/2611.29807v1) | 2611.29807v1 | 2026-11-22T22:17:08Z | 2026-11-22T22:17:08Z | 新候选；未完成全文精读 |\n| [Calibrating World Action Models: From Adaptive System 2 Takeover to Self-Evolution](https://arxiv.org/abs/2611.30188v1) | 2611.30188v1 | 2026-11-23T07:33:51Z | 2026-11-23T07:33:51Z | 新候选；未完成全文精读 |\n| [RoboLiveMem: Is Robot Memory Solved When the World Does Not Wait?](https://arxiv.org/abs/2611.30047v1) | 2611.30047v1 | 2026-11-23T04:52:41Z | 2026-11-23T04:52:41Z | 新候选；未完成全文精读 |\n| [MAWAM: Joint Imagination for Collaborative Robot Manipulation with a Multi-Agent World Action Model](https://arxiv.org/abs/2611.29501v1) | 2611.29501v1 | 2026-11-22T14:16:55Z | 2026-11-22T14:16:55Z | 新候选；未完成全文精读 |\n| [Two Actions from One State: Fork Futures Teach JEPA World Models to Compare](https://arxiv.org/abs/2611.28350v1) | 2611.28350v1 | 2026-11-20T22:01:18Z | 2026-11-20T22:01:18Z | 新候选；未完成全文精读 |\n| [RecallWorld: Episodic Memory for Persistent Embodied Video World Models](https://arxiv.org/abs/2611.28666v1) | 2611.28666v1 | 2026-11-21T08:46:31Z | 2026-11-21T08:46:31Z | 新候选；未完成全文精读 |\n| [FlexWAM: Learning Flexible Visual Routing for World Action Models](https://arxiv.org/abs/2611.30024v1) | 2611.30024v1 | 2026-11-23T04:25:35Z | 2026-11-23T04:25:35Z | 新候选；未完成全文精读 |\n\n## 覆盖缺口\n\n只使用上述五类 arXiv RSS 和有限 API 窗口；未做出版社、OpenReview、GitHub 全量抓取。剩余关键词匹配项不表示质量差，只是未在本轮预算内深筛。未发布完整摘要、PDF、论文图片或全文译文。",
+  "candidates": [
+    {
+      "id": "2611.31201",
+      "version": "2611.31201v1",
+      "title": "Embo-Harness: Towards Understanding Frontier-Model-as-Policy Harness",
+      "published": "2026-11-23T18:48:54Z",
+      "updated": "2026-11-23T18:48:54Z",
+      "authors": [
+        "Xiao-Ming Wu",
+        "Kang Liao",
+        "Yuexiao Ma",
+        "Taolin Zhang",
+        "Mingqian Zhou",
+        "Nuo Chen",
+        "Ziming Li",
+        "Yihang Luo",
+        "Rui Li",
+        "Zhonghua Wu",
+        "Tianyu Xie",
+        "Xiawu Zheng",
+        "Zhongang Cai",
+        "Zhi Hou",
+        "Chen Change Loy"
+      ],
+      "url": "https://arxiv.org/abs/2611.31201v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.30287",
+      "version": "2611.30287v1",
+      "title": "MMMem: Self-Improving Agents with Task-Aware Multimodal Experience Consolidation",
+      "published": "2026-11-23T08:44:23Z",
+      "updated": "2026-11-23T08:44:23Z",
+      "authors": [
+        "Yuxuan Chen",
+        "Changwei Lv",
+        "Yunfei Li",
+        "Zhongjing Du",
+        "Kehui Tan",
+        "Zijun Liao",
+        "Ruochong Zheng",
+        "Hao Chen",
+        "Can Deng",
+        "Zheni Zeng",
+        "Chang Liu",
+        "Jie Chen"
+      ],
+      "url": "https://arxiv.org/abs/2611.30287v1",
+      "topics": [
+        "agent-memory",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.30188",
+      "version": "2611.30188v1",
+      "title": "Calibrating World Action Models: From Adaptive System 2 Takeover to Self-Evolution",
+      "published": "2026-11-23T07:33:51Z",
+      "updated": "2026-11-23T07:33:51Z",
+      "authors": [
+        "Wenhao Li",
+        "Yu Han",
+        "Xiu Su",
+        "Dehao Wu",
+        "Keke Huang",
+        "Shan You",
+        "Fei Wang",
+        "Chang Xu"
+      ],
+      "url": "https://arxiv.org/abs/2611.30188v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.30101",
+      "version": "2611.30101v1",
+      "title": "Agent on Guard: Self-Improving Runtime Intervention for Robust Robotic Manipulation",
+      "published": "2026-11-23T05:58:26Z",
+      "updated": "2026-11-23T05:58:26Z",
+      "authors": [
+        "Gengming Cui",
+        "Mingfei Han",
+        "Jiawei Zhang",
+        "Mozheng Liao",
+        "Yunkai Guo",
+        "Minghao Jin",
+        "Tingwen Du",
+        "Salman Khan",
+        "Xiaojun Chang",
+        "Zhihui Li"
+      ],
+      "url": "https://arxiv.org/abs/2611.30101v1",
+      "topics": [
+        "robotics",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.30047",
+      "version": "2611.30047v1",
+      "title": "RoboLiveMem: Is Robot Memory Solved When the World Does Not Wait?",
+      "published": "2026-11-23T04:52:41Z",
+      "updated": "2026-11-23T04:52:41Z",
+      "authors": [
+        "Yunbei Zhang",
+        "Yuyou Zhang",
+        "Janet Wang",
+        "Ming Liu",
+        "Yijiang Li",
+        "Yikai Wang",
+        "Weirui Ye",
+        "Ding Zhao",
+        "Jihun Hamm"
+      ],
+      "url": "https://arxiv.org/abs/2611.30047v1",
+      "topics": [
+        "robotics",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.30024",
+      "version": "2611.30024v1",
+      "title": "FlexWAM: Learning Flexible Visual Routing for World Action Models",
+      "published": "2026-11-23T04:25:35Z",
+      "updated": "2026-11-23T04:25:35Z",
+      "authors": [
+        "Mingyu Mei",
+        "Haojie Xu",
+        "Zibo Dai",
+        "Hongjie Fang",
+        "Shirun Tang",
+        "Zhengrui Lv",
+        "Yang Liu",
+        "Chen Guang",
+        "Xingyue Zhao",
+        "Huiliang Shen",
+        "Zaixing He"
+      ],
+      "url": "https://arxiv.org/abs/2611.30024v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.30011",
+      "version": "2611.30011v1",
+      "title": "MORSE: Optimizing Streaming Memory Design via Open-World Auto-Research",
+      "published": "2026-11-23T04:11:45Z",
+      "updated": "2026-11-23T04:11:45Z",
+      "authors": [
+        "Ce Zhang",
+        "Jianshu Zhang",
+        "Jinxi He",
+        "Xiyuan Yang",
+        "Pan Wang",
+        "Han Liu",
+        "Katia Sycara",
+        "Yaqi Xie"
+      ],
+      "url": "https://arxiv.org/abs/2611.30011v1",
+      "topics": [
+        "agent-memory",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.29807",
+      "version": "2611.29807v1",
+      "title": "Blind to What They Can Fix: A Detection Gap in Self-Improving Agents",
+      "published": "2026-11-22T22:17:08Z",
+      "updated": "2026-11-22T22:17:08Z",
+      "authors": [
+        "Teng Cao",
+        "Yu Deng",
+        "Kristian Kersting"
+      ],
+      "url": "https://arxiv.org/abs/2611.29807v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.29609",
+      "version": "2611.29609v1",
+      "title": "JEPA-Shield: Safe Diffusion Planning with Latent World Models via Conformal Shielding",
+      "published": "2026-11-22T17:00:07Z",
+      "updated": "2026-11-22T17:00:07Z",
+      "authors": [
+        "Taekyung Kim",
+        "Ege Yuceel",
+        "Steven Hong",
+        "Georgios Fainekos",
+        "Dimitra Panagou",
+        "Bardh Hoxha"
+      ],
+      "url": "https://arxiv.org/abs/2611.29609v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.29501",
+      "version": "2611.29501v1",
+      "title": "MAWAM: Joint Imagination for Collaborative Robot Manipulation with a Multi-Agent World Action Model",
+      "published": "2026-11-22T14:16:55Z",
+      "updated": "2026-11-22T14:16:55Z",
+      "authors": [
+        "Rongze Tang",
+        "Chenyu Zhou",
+        "Jianjie Fang",
+        "Ziming Liu",
+        "Zhaolu Wang",
+        "Ziyou Wang",
+        "Xvyuan Liu",
+        "Wei Wu",
+        "Chen Gao",
+        "Yong Li",
+        "Zhibo Chen"
+      ],
+      "url": "https://arxiv.org/abs/2611.29501v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.29377",
+      "version": "2611.29377v1",
+      "title": "Contact Harness: Enabling VLM Agents to Perform Contact-Rich Manipulation",
+      "published": "2026-11-22T10:38:23Z",
+      "updated": "2026-11-22T10:38:23Z",
+      "authors": [
+        "Shilin Shan",
+        "Yuxuan Hu",
+        "Chuhao Zhou",
+        "Yimeng Dong",
+        "Bohan Hou",
+        "Jiaqi Bai",
+        "Boyu Ma",
+        "Jiahua Dong",
+        "Jianfei Yang"
+      ],
+      "url": "https://arxiv.org/abs/2611.29377v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.29125",
+      "version": "2611.29125v1",
+      "title": "SilentWAM: Planning in the Masked State of a Diffusion World Model",
+      "published": "2026-11-22T01:16:00Z",
+      "updated": "2026-11-22T01:16:00Z",
+      "authors": [
+        "Ziyu Zhao",
+        "Casey Sun",
+        "Zeyu Wang",
+        "Shicong Ma",
+        "Emily T Zhang",
+        "Cheng Lu"
+      ],
+      "url": "https://arxiv.org/abs/2611.29125v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.28943",
+      "version": "2611.28943v1",
+      "title": "SANA-Robot: Efficient World Action Model with Hybrid Memory",
+      "published": "2026-11-21T17:23:39Z",
+      "updated": "2026-11-21T17:23:39Z",
+      "authors": [
+        "Yuyang Zhao",
+        "Zekai Li",
+        "Yicheng Pan",
+        "Jiaming Tang",
+        "Zhuoyang Zhang",
+        "Jiaxu Xing",
+        "Moritz Reuss",
+        "Quanquan Peng",
+        "Junsong Chen",
+        "Enze Xie",
+        "Zhijian Liu",
+        "Song Han"
+      ],
+      "url": "https://arxiv.org/abs/2611.28943v1",
+      "topics": [
+        "world-models",
+        "robotics",
+        "agent-memory",
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.28732",
+      "version": "2611.28732v1",
+      "title": "Entangle: Scaling Human-Video In-Context World-Action Models across Unseen Tasks and Contexts",
+      "published": "2026-11-21T10:58:36Z",
+      "updated": "2026-11-21T10:58:36Z",
+      "authors": [
+        "Chendong Xiang",
+        "Chengwen Zhang",
+        "Ruowen Zhao",
+        "Zeyuan Wang",
+        "Shuhe Huang",
+        "Rongxu Cui",
+        "Min Zhao",
+        "Fan Bao",
+        "Hengkai Tan",
+        "Jun Zhu"
+      ],
+      "url": "https://arxiv.org/abs/2611.28732v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.28666",
+      "version": "2611.28666v1",
+      "title": "RecallWorld: Episodic Memory for Persistent Embodied Video World Models",
+      "published": "2026-11-21T08:46:31Z",
+      "updated": "2026-11-21T08:46:31Z",
+      "authors": [
+        "Sarosij Bose",
+        "Gitika Karumuri",
+        "Chenqi Li",
+        "Allen Tu",
+        "Srikumar Sastry",
+        "Mellon Zhang",
+        "Avinash Ravichandran",
+        "Alexander Schwing",
+        "Konstantinos Karydis",
+        "Amit K. Roy Chowdhury"
+      ],
+      "url": "https://arxiv.org/abs/2611.28666v1",
+      "topics": [
+        "world-models",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.28350",
+      "version": "2611.28350v1",
+      "title": "Two Actions from One State: Fork Futures Teach JEPA World Models to Compare",
+      "published": "2026-11-20T22:01:18Z",
+      "updated": "2026-11-20T22:01:18Z",
+      "authors": [
+        "Yihao Wu",
+        "Runjia Zeng",
+        "Tongyan Wang",
+        "Renzhong Huang",
+        "Chongzhou Fang",
+        "Qifan Wang",
+        "Fan Heng",
+        "Dongfang Liu"
+      ],
+      "url": "https://arxiv.org/abs/2611.28350v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.28244",
+      "version": "2611.28244v1",
+      "title": "Demystifying the Autoresearch Harness: How Context and Skills Shape Self-Evolving Agents",
+      "published": "2026-11-20T19:22:41Z",
+      "updated": "2026-11-20T19:22:41Z",
+      "authors": [
+        "Kelvin Kiu-Wai Tam",
+        "Newt Hue-Nam K. Nguyen",
+        "Tianshi Zheng",
+        "Yunxiang Mo",
+        "Weihan Li",
+        "Zhongwei Xie",
+        "Chiu Yeung Tang",
+        "Jui-Yu Ho",
+        "Yangqiu Song",
+        "Ginny Y. Wong",
+        "Simon See"
+      ],
+      "url": "https://arxiv.org/abs/2611.28244v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-24"
+    }
+  ],
+  "updates": [
+    {
+      "id": "2611.27166",
+      "version": "2611.27166v2",
+      "title": "Mem-X: A Memory-Dependent Cross-Episode Benchmark for Vision-and-Language Navigation",
+      "published": "2026-11-20T05:51:31Z",
+      "updated": "2026-11-23T05:05:05Z",
+      "authors": [
+        "Zhikang Shi",
+        "Yuk Tung Samuel Fang",
+        "Hongyu Ding",
+        "Zixuan Chen",
+        "Yujin Wang",
+        "Junhui Guo",
+        "You Wu",
+        "Jieqi Shi",
+        "Jing Huo",
+        "Yang Gao"
+      ],
+      "url": "https://arxiv.org/abs/2611.27166v2",
+      "topics": [
+        "robotics",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.25595",
+      "version": "2611.25595v2",
+      "title": "LoopedWAM: Looped World Action Models for Elastic Inference",
+      "published": "2026-11-19T06:42:13Z",
+      "updated": "2026-11-21T18:23:53Z",
+      "authors": [
+        "Anh Dao",
+        "Xinxin Liu",
+        "Hang Yu",
+        "Jeffrey A Chan Santiago",
+        "Yuzhang Shang"
+      ],
+      "url": "https://arxiv.org/abs/2611.25595v2",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-24"
+    },
+    {
+      "id": "2611.27689",
+      "version": "2611.27689v2",
+      "title": "Embodied-Harness: Towards Recursive Self-Improvement for Robotic Manipulation",
+      "published": "2026-11-20T14:55:07Z",
+      "updated": "2026-11-23T03:37:11Z",
+      "authors": [
+        "Zhenxuan Fan",
+        "Zhuoya Wang",
+        "Yuqian Yuan",
+        "Wenqiao Zhang",
+        "Juncheng Li",
+        "Jun Xiao",
+        "Siliang Tang",
+        "Yueting Zhuang"
+      ],
+      "url": "https://arxiv.org/abs/2611.27689v2",
+      "topics": [
+        "robotics",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-24"
+    }
+  ]
+}
