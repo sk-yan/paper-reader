@@ -1,0 +1,332 @@
+{
+  "date": "2026-11-26",
+  "windowStart": "2026-11-23T16:11:36Z",
+  "windowEnd": "2026-11-27T01:40:00Z",
+  "summary": "12 篇候选、1 篇更新。SEEK 连接跨尝试经验与程序，M²-WAM 压缩回合内历史，SealedLoop 用独立验收检验自改进。",
+  "priorities": [
+    {
+      "id": "2611.33915",
+      "label": "SEEK",
+      "reason": "冻结模型，积累程序和动作效果证据；需分开演化尝试和冻结快照评测。"
+    },
+    {
+      "id": "2611.33710",
+      "label": "M²-WAM",
+      "reason": "训练型视觉/动作双模态分层记忆；在线状态大小有界，主要作用于同一 episode。"
+    },
+    {
+      "id": "2611.33794",
+      "label": "SealedLoop",
+      "reason": "外部封存评审与配对序贯检验控制错误接受；统计保证依赖采样条件且会增加评估成本。"
+    }
+  ],
+  "reportMarkdown": "# 2026-11-26 每日论文发现\n\n本期 **12 篇新候选、1 篇版本更新**。最值得一起读的是 SEEK、M²-WAM 和 SealedLoop：分别帮助理解跨尝试经验、任务内记忆，以及怎样判断“确实变好了”。这是每日候选初筛，不是完整精读入库。\n\n## 检索范围与时间\n\n按洛杉矶 11 月 26 日记期。计划早间运行，实际抓取在当地下午，UTC 为 11 月 27 日 01:21 起。上一轮成功查询为 UTC 11 月 25 日 16:11，保留 48 小时交叠至 **11 月 23 日 16:11 UTC**。本期以 26 日公告的精确版本为准，首次提交日期大多为 25 日；不能按上次抓取时间直接删掉尚未公告的旧提交。\n\ncs.RO、cs.AI、cs.CL、cs.CV 首轮成功；cs.LG 首轮超时，独立重试成功，确认同一公告批次并补查新增标题。五类共 1,556 条分类记录（跨类重复）；首轮四类有 209 条去重关键词匹配，重试未重新计算统一匹配总数。API 只查最近更新 100 条，非全网或全 arXiv 覆盖。本轮从有界池人工初筛 12 篇，剩余匹配未穷尽。\n\n| 主题 | 本轮保留新候选 | 短名单 | 优先 |\n| --- | --- | --- | --- |\n| 世界模型 | 3 | 3 | WorldReforge（仅摘要初筛） |\n| 机器人 | 4 | 3 | SEEK |\n| Agent Memory | 3 | 3 | M²-WAM |\n| RSI | 4 | 3 | SEEK |\n| 世界动作模型 | 3 | 3 | M²-WAM |\n\n跨方向论文只算一次，以上不能相加当作独立论文总数。\n\n## 1. SEEK：保留程序，也保留动作究竟产生了什么效果\n\n**SEEK: Self-Evolution through Execution Knowledge for Agentic Robot Manipulation**\n\n作者：Zeyang Guan、Qihao Zhao、Rui Gong、Zhang Haitian、Yalun Dai、Yangyu Huang、Lingao Xiao、Haozhe Du、Xuehui Yu、Ye Lu、Jianjun Gao、Ruoyu Wang、Haowen Bai、Hao Li、Scarlett Li、Kim-Hui Yap。首次提交 2026-11-25；版本 2611.33915v1，修订 2026-11-25。标签：机器人 / RSI。预印本，未确认正式录用。[官方记录](https://arxiv.org/abs/2611.33915v1)。\n\n底层模型固定；可执行程序根据当前观测决定动作，持久证据库记录成功与失败动作的实测效果。RoboDojo 42 项任务中，10 次演化后的快照相对无继承对照，成功率从 19.7% 到 48.0%。关键边界：随后每个评测回合从指定快照的独立副本开始，回合内可修订，但结束后丢弃更新；不是测试集内不断积累。导师解读：它与你的跨尝试记忆方向非常近，应优先比较 carryover 对照、演化布局与测试布局隔离，而非只看曲线。另有小规模真机展示，但不能把仿真总分直接当真机证据。[§3、§4.1/4.3/4.6](https://arxiv.org/html/2611.33915v1)\n\n已确认[作者代码仓库](https://github.com/ZeyangGuan/SEEK-Agentic-Robot-Manipulation)可访问，尚未复现。官方运行说明需要模型 API、仿真和视觉模型；冻结参数不代表无推理成本。\n\nEnglish: SEEK retains executable procedures and action-effect evidence with fixed model weights. Its main evaluation resets each episode to a designated knowledge snapshot and discards episode-local updates, separating development carryover from evaluation adaptation.\n\n## 2. M²-WAM：记忆可以很长，但不必无限保存每帧\n\n**$\\mathrm{M}^{2}$-WAM: Efficient Hierarchical Memory Across Modalities and Timescales for World-Action Models**\n\n作者：Xiaopeng Zhang、Weiqi Yuan、Xin Zhu、Jiaxi Huang、Yueqi Hu、Yin Zhang、Jian Yao、Yanjie Li。首次提交 2026-11-25；版本 2611.33710v1，修订 2026-11-25。标签：Agent Memory / 世界动作模型。预印本，未确认正式录用。[官方记录](https://arxiv.org/abs/2611.33710v1)。\n\n近期视觉与动作历史放入短期队列，被移出的条目通过门控 delta 更新压入固定大小长期状态。它训练记忆读写模块、动作前缀编码器以及两套 DiT，不是冻结 WAM 外挂文本库。作者在 MIKASA-Robo、RMBench 上相对 Fast-WAM 报告平均成功率分别提高 53.2、61.2 个百分点，并有三项真机任务。导师解读：它解决的是回合内历史依赖与存储增长，不应据此宣称跨回合技能自进化；复现要核对历史构造、梯度截断与实际执行动作前缀。[§3–4、Appendix A.2](https://arxiv.org/html/2611.33710v1)\n\n代码仓库本轮未独立确认，不猜测链接。GPU 需求需结合训练配置进一步核对，不能仅从固定大小在线记忆推断训练便宜。\n\nEnglish: M²-WAM compresses visual and executed-action histories into bounded online state, but its modules are trained. Episode memory efficiency and cross-episode self-improvement are different claims.\n\n## 3. SealedLoop：系统说进步了，谁来独立验收？\n\n**Keep or Roll Back? Out-of-Loop Judges for Self-Improving VLA and End-to-End Embodied Policies**\n\n作者：Zilin Huang、Zhengyang Wan、Kangan Qian、Zihao Sheng、Sikai Chen。首次提交 2026-11-25；版本 2611.33794v1，修订 2026-11-25。标签：RSI。预印本，未确认正式录用。[官方记录](https://arxiv.org/abs/2611.33794v1)。\n\n把改进过程看不到的评审放在循环外，在配对条件下比较新旧策略，用序贯置信区间决定接受、拒绝或预算耗尽后回滚。它不是新记忆模块；实验包含策略重训练。一个驾驶改进循环的最终 PDMS 为 0.674，循环内 critic 对应为 0.649；这不是所有实验的统一提升。真车实验两版本均未完成主路线，不能宣传成已实现可靠驾驶。导师解读：值得借鉴的是独立验收与失败回滚，不是“封存评审绝不会错”；统计保证有条件，有限预算也可能错失小收益。[§3.3–3.4、§5.4–5.5](https://arxiv.org/html/2611.33794v1)\n\n代码仓库本轮未独立确认。实际成本主要还包括成对评测，不能只比较训练或记忆开销。\n\nEnglish: SealedLoop tests improvement using evidence unavailable to the improver. Its conditional statistical guarantees and additional paired-evaluation budget should be distinguished from unconditional safety or universal performance gains.\n\n## 世界模型补充：WorldReforge（仅摘要初筛）\n\n[Beyond the Happy Path](https://arxiv.org/abs/2611.33925v1)通过失败抓取、滑移等仿真数据补成功示范的盲区，并训练局部交互与表面对应信号。与当前方向的联系是：经验不应只保存成功案例。不过训练数据收益是否能迁移到冻结策略的外部记忆，仍需实验，不能直接类推。\n\n## 更新与证据边界\n\n- [Entangle: Scaling Human-Video In-Context World-Action Models across Unseen Tasks and Contexts](https://arxiv.org/abs/2611.28732v2)：2611.28732v2；首次提交 2026-11-21，修订 2026-11-25。只核对版本存在，未审计改动。\n\n优先三篇核对官方方法和实验关键段落，其余仅官方摘要初筛。尚未完成统一全文、代码、种子与显著性审计；未确认录用不挂会议标签。保留已精读论文状态，不上传完整摘要、PDF、原图或全文译文。\n\n来源：[cs.RO](https://rss.arxiv.org/rss/cs.RO)、[cs.AI](https://rss.arxiv.org/rss/cs.AI)、[cs.CL](https://rss.arxiv.org/rss/cs.CL)、[cs.LG](https://rss.arxiv.org/rss/cs.LG)、[cs.CV](https://rss.arxiv.org/rss/cs.CV)。[全部候选](#candidates) · [筛选附录](#screening)\n",
+  "appendixMarkdown": "# 2026-11-26 筛选附录\n\n按当前主题最多10篇候选 → 最多3篇短名单 → 1篇方向优先。本轮各方向3–4篇，不凑数。跨方向按规范化 arXiv ID 去重；与既有候选和公开精读登记比对，无新候选重复。\n\n五维权重：创新30%、方法25%、实验25%、写作10%、相关性10%。没有统一全文审计，前四项及加权总分保留 N/A，不将缺失项按零分或重新归一化。相关性是编辑初筛判断，不是影响力或质量认证。排序是建议阅读顺序。\n\n## 世界模型\n\n| 候选 | 初筛依据与边界 |\n| --- | --- |\n| [Beyond the Happy Path: Generalizing Robot World Models from Simulated Failures](https://arxiv.org/abs/2611.33925v1) | 加入失败接触仿真数据与表面对应监督，补成功示范遗漏的动力学。 |\n| [WorldPhy: Benchmarking Fine-Grained Physical Plausibility of World Models in Robotics](https://arxiv.org/abs/2611.34130v1) | 对机器人视频的物理细节做人类标注并训练评分器；评视频合理性而非闭环任务成功。 |\n| [WAtcher: Watching Ahead for Safe Robotic Manipulation with Efficient World-Action Models](https://arxiv.org/abs/2611.34124v1) | 预览候选动作后果并用外置风险模块决定退避；需要危害数据和训练，不等于绝对安全保证。 |\n\n| 短名单 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [Beyond the Happy Path: Generalizing Robot World Models from Simulated Failures](https://arxiv.org/abs/2611.33925v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [WorldPhy: Benchmarking Fine-Grained Physical Plausibility of World Models in Robotics](https://arxiv.org/abs/2611.34130v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [WAtcher: Watching Ahead for Safe Robotic Manipulation with Efficient World-Action Models](https://arxiv.org/abs/2611.34124v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：Beyond the Happy Path: Generalizing Robot World Models from Simulated Failures。加入失败接触仿真数据与表面对应监督，补成功示范遗漏的动力学。 仅摘要判断，未因选为方向优先就视为全文核验。\n\n## 机器人\n\n| 候选 | 初筛依据与边界 |\n| --- | --- |\n| [SEEK: Self-Evolution through Execution Knowledge for Agentic Robot Manipulation](https://arxiv.org/abs/2611.33915v1) | 冻结模型，积累程序和动作效果证据；需分开演化尝试和冻结快照评测。 |\n| [RegHarness: Regulating What Code-as-Policy Agents Keep from Steps to Skills](https://arxiv.org/abs/2611.33739v1) | 同时治理单次执行和跨次代码保留；重置重放与作者手动启用修订是重要协议条件。 |\n| [Cairn: Object-Centric 3D Trajectory Priors for Steering Frozen VLAs](https://arxiv.org/abs/2611.34914v1) | 冻结 VLA 但训练三维轨迹先验；自建扰动场景与第三方 LIBERO-PRO 的收益应分开看。 |\n| [RoboEvo$^2$: Recursive Robot Self-Improvement via Harness-Policy Co-Evolution](https://arxiv.org/abs/2611.34675v1) | 外部程序与策略共同演化，含监督训练和偏好蒸馏，不是纯零梯度记忆。 |\n\n| 短名单 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [SEEK: Self-Evolution through Execution Knowledge for Agentic Robot Manipulation](https://arxiv.org/abs/2611.33915v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [RegHarness: Regulating What Code-as-Policy Agents Keep from Steps to Skills](https://arxiv.org/abs/2611.33739v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [Cairn: Object-Centric 3D Trajectory Priors for Steering Frozen VLAs](https://arxiv.org/abs/2611.34914v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：SEEK: Self-Evolution through Execution Knowledge for Agentic Robot Manipulation。冻结模型，积累程序和动作效果证据；需分开演化尝试和冻结快照评测。 \n\n## Agent Memory\n\n| 候选 | 初筛依据与边界 |\n| --- | --- |\n| [$\\mathrm{M}^{2}$-WAM: Efficient Hierarchical Memory Across Modalities and Timescales for World-Action Models](https://arxiv.org/abs/2611.33710v1) | 训练型视觉/动作双模态分层记忆；在线状态大小有界，主要作用于同一 episode。 |\n| [RegHarness: Regulating What Code-as-Policy Agents Keep from Steps to Skills](https://arxiv.org/abs/2611.33739v1) | 同时治理单次执行和跨次代码保留；重置重放与作者手动启用修订是重要协议条件。 |\n| [HoMe: Toward Practical Harness Optimization of Memory Systems for AI Assistants](https://arxiv.org/abs/2611.34624v1) | 用评估轨迹搜索记忆系统代码、提示和配置；检查候选筛选与测试集是否隔离。 |\n\n| 短名单 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [$\\mathrm{M}^{2}$-WAM: Efficient Hierarchical Memory Across Modalities and Timescales for World-Action Models](https://arxiv.org/abs/2611.33710v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [HoMe: Toward Practical Harness Optimization of Memory Systems for AI Assistants](https://arxiv.org/abs/2611.34624v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [RegHarness: Regulating What Code-as-Policy Agents Keep from Steps to Skills](https://arxiv.org/abs/2611.33739v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：$\\mathrm{M}^{2}$-WAM: Efficient Hierarchical Memory Across Modalities and Timescales for World-Action Models。训练型视觉/动作双模态分层记忆；在线状态大小有界，主要作用于同一 episode。 \n\n## RSI\n\n| 候选 | 初筛依据与边界 |\n| --- | --- |\n| [SEEK: Self-Evolution through Execution Knowledge for Agentic Robot Manipulation](https://arxiv.org/abs/2611.33915v1) | 冻结模型，积累程序和动作效果证据；需分开演化尝试和冻结快照评测。 |\n| [RoboEvo$^2$: Recursive Robot Self-Improvement via Harness-Policy Co-Evolution](https://arxiv.org/abs/2611.34675v1) | 外部程序与策略共同演化，含监督训练和偏好蒸馏，不是纯零梯度记忆。 |\n| [Keep or Roll Back? Out-of-Loop Judges for Self-Improving VLA and End-to-End Embodied Policies](https://arxiv.org/abs/2611.33794v1) | 外部封存评审与配对序贯检验控制错误接受；统计保证依赖采样条件且会增加评估成本。 |\n| [EvoLink-Bench: A Benchmark for Evaluating Self-Evolving Agents in Long-Horizon Interdependent Task Streams](https://arxiv.org/abs/2611.34400v1) | 区分回合内恢复、持久状态更新和后续经验复用；更新状态不必然提高下一任务表现。 |\n\n| 短名单 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [SEEK: Self-Evolution through Execution Knowledge for Agentic Robot Manipulation](https://arxiv.org/abs/2611.33915v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [Keep or Roll Back? Out-of-Loop Judges for Self-Improving VLA and End-to-End Embodied Policies](https://arxiv.org/abs/2611.33794v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [RoboEvo$^2$: Recursive Robot Self-Improvement via Harness-Policy Co-Evolution](https://arxiv.org/abs/2611.34675v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：SEEK: Self-Evolution through Execution Knowledge for Agentic Robot Manipulation。冻结模型，积累程序和动作效果证据；需分开演化尝试和冻结快照评测。 \n\n## 世界动作模型\n\n| 候选 | 初筛依据与边界 |\n| --- | --- |\n| [$\\mathrm{M}^{2}$-WAM: Efficient Hierarchical Memory Across Modalities and Timescales for World-Action Models](https://arxiv.org/abs/2611.33710v1) | 训练型视觉/动作双模态分层记忆；在线状态大小有界，主要作用于同一 episode。 |\n| [WAtcher: Watching Ahead for Safe Robotic Manipulation with Efficient World-Action Models](https://arxiv.org/abs/2611.34124v1) | 预览候选动作后果并用外置风险模块决定退避；需要危害数据和训练，不等于绝对安全保证。 |\n| [DriftWAM: Faster World-Action Models via Action-Aware Video Drifting](https://arxiv.org/abs/2611.33797v1) | 动作感知的少步 WAM 蒸馏；属于训练/压缩路线，不是外部经验库。 |\n\n| 短名单 | 创新30% | 方法25% | 实验25% | 写作10% | 相关性10% | 总分 |\n| --- | --- | --- | --- | --- | --- | --- |\n| [$\\mathrm{M}^{2}$-WAM: Efficient Hierarchical Memory Across Modalities and Timescales for World-Action Models](https://arxiv.org/abs/2611.33710v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [WAtcher: Watching Ahead for Safe Robotic Manipulation with Efficient World-Action Models](https://arxiv.org/abs/2611.34124v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n| [DriftWAM: Faster World-Action Models via Action-Aware Video Drifting](https://arxiv.org/abs/2611.33797v1) | N/A | N/A | N/A | N/A | 5/5 | N/A |\n\n优先：$\\mathrm{M}^{2}$-WAM: Efficient Hierarchical Memory Across Modalities and Timescales for World-Action Models。训练型视觉/动作双模态分层记忆；在线状态大小有界，主要作用于同一 episode。 \n\n## 额外排查\n\nRegHarness 的 reset/replay 与作者手动启用修订、RoboEvo² 的梯度训练、Cairn 的先验训练，均不能省略后统称冻结权重自演化。cs.LG 重试补查了独有主题标题，但未全部深筛；成功恢复不等于穷尽覆盖。未纳入项不表示质量差。所有公开元数据按 RSS 精确版本经官方 Atom API核对，未据文件创建时间填写论文日期。",
+  "candidates": [
+    {
+      "id": "2611.34124",
+      "version": "2611.34124v1",
+      "title": "WAtcher: Watching Ahead for Safe Robotic Manipulation with Efficient World-Action Models",
+      "published": "2026-11-25T10:25:08Z",
+      "updated": "2026-11-25T10:25:08Z",
+      "authors": [
+        "Ziyu Shan",
+        "Xiao Ma",
+        "Kangrui Yu",
+        "Changjie Wang",
+        "Gaoyuan Wu",
+        "Zaijia Yang",
+        "Chuanrui Zhang",
+        "Qirui Li",
+        "Yanbo Zhang",
+        "Duomin Wang",
+        "Ziwei Wang"
+      ],
+      "url": "https://arxiv.org/abs/2611.34124v1",
+      "topics": [
+        "world-models",
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.34400",
+      "version": "2611.34400v1",
+      "title": "EvoLink-Bench: A Benchmark for Evaluating Self-Evolving Agents in Long-Horizon Interdependent Task Streams",
+      "published": "2026-11-25T14:00:22Z",
+      "updated": "2026-11-25T14:00:22Z",
+      "authors": [
+        "Wei Chen",
+        "Xiaodong Lu",
+        "Weihao Shen",
+        "Gongxun Li",
+        "Xingyu Guo",
+        "Qihang Sun",
+        "Fuwei Zhang",
+        "Zhao Zhang",
+        "Yikun Ban",
+        "Shuang Li",
+        "Deqing Wang",
+        "Fuzhen Zhuang"
+      ],
+      "url": "https://arxiv.org/abs/2611.34400v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.33794",
+      "version": "2611.33794v1",
+      "title": "Keep or Roll Back? Out-of-Loop Judges for Self-Improving VLA and End-to-End Embodied Policies",
+      "published": "2026-11-25T05:20:34Z",
+      "updated": "2026-11-25T05:20:34Z",
+      "authors": [
+        "Zilin Huang",
+        "Zhengyang Wan",
+        "Kangan Qian",
+        "Zihao Sheng",
+        "Sikai Chen"
+      ],
+      "url": "https://arxiv.org/abs/2611.33794v1",
+      "topics": [
+        "rsi"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.34675",
+      "version": "2611.34675v1",
+      "title": "RoboEvo$^2$: Recursive Robot Self-Improvement via Harness-Policy Co-Evolution",
+      "published": "2026-11-25T16:39:10Z",
+      "updated": "2026-11-25T16:39:10Z",
+      "authors": [
+        "Chenzhi Liu",
+        "Jiehong Lin",
+        "Wei Huang",
+        "Xuzhao Huang",
+        "Haoyuan Li",
+        "Yang Zhang",
+        "Junchao Huang",
+        "Chenyeyang Cai",
+        "Bo Wang",
+        "Kazuhiro Kosuge",
+        "Zhongrui Wang",
+        "Xiaojuan Qi"
+      ],
+      "url": "https://arxiv.org/abs/2611.34675v1",
+      "topics": [
+        "robotics",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.33915",
+      "version": "2611.33915v1",
+      "title": "SEEK: Self-Evolution through Execution Knowledge for Agentic Robot Manipulation",
+      "published": "2026-11-25T07:37:06Z",
+      "updated": "2026-11-25T07:37:06Z",
+      "authors": [
+        "Zeyang Guan",
+        "Qihao Zhao",
+        "Rui Gong",
+        "Zhang Haitian",
+        "Yalun Dai",
+        "Yangyu Huang",
+        "Lingao Xiao",
+        "Haozhe Du",
+        "Xuehui Yu",
+        "Ye Lu",
+        "Jianjun Gao",
+        "Ruoyu Wang",
+        "Haowen Bai",
+        "Hao Li",
+        "Scarlett Li",
+        "Kim-Hui Yap"
+      ],
+      "url": "https://arxiv.org/abs/2611.33915v1",
+      "topics": [
+        "robotics",
+        "rsi"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.33739",
+      "version": "2611.33739v1",
+      "title": "RegHarness: Regulating What Code-as-Policy Agents Keep from Steps to Skills",
+      "published": "2026-11-25T04:01:05Z",
+      "updated": "2026-11-25T04:01:05Z",
+      "authors": [
+        "Shengming Liu",
+        "Yunyi Gao",
+        "Xinyi Wang",
+        "Jianyong Sun",
+        "Shuai Wang",
+        "Yi Deng",
+        "Li Chenye",
+        "Mingcai Zhou",
+        "Sim Kuan Goh"
+      ],
+      "url": "https://arxiv.org/abs/2611.33739v1",
+      "topics": [
+        "robotics",
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.33710",
+      "version": "2611.33710v1",
+      "title": "$\\mathrm{M}^{2}$-WAM: Efficient Hierarchical Memory Across Modalities and Timescales for World-Action Models",
+      "published": "2026-11-25T03:24:00Z",
+      "updated": "2026-11-25T03:24:00Z",
+      "authors": [
+        "Xiaopeng Zhang",
+        "Weiqi Yuan",
+        "Xin Zhu",
+        "Jiaxi Huang",
+        "Yueqi Hu",
+        "Yin Zhang",
+        "Jian Yao",
+        "Yanjie Li"
+      ],
+      "url": "https://arxiv.org/abs/2611.33710v1",
+      "topics": [
+        "agent-memory",
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.33797",
+      "version": "2611.33797v1",
+      "title": "DriftWAM: Faster World-Action Models via Action-Aware Video Drifting",
+      "published": "2026-11-25T05:23:59Z",
+      "updated": "2026-11-25T05:23:59Z",
+      "authors": [
+        "Minyang Li",
+        "Siyu Xu",
+        "Yunke Wang",
+        "Ying-Cong Chen",
+        "Chang Xu",
+        "Daochang Liu"
+      ],
+      "url": "https://arxiv.org/abs/2611.33797v1",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.33925",
+      "version": "2611.33925v1",
+      "title": "Beyond the Happy Path: Generalizing Robot World Models from Simulated Failures",
+      "published": "2026-11-25T07:45:51Z",
+      "updated": "2026-11-25T07:45:51Z",
+      "authors": [
+        "Zhiyue Zhao",
+        "Mingyu Liu",
+        "Bolin Zhang",
+        "Liyang Li",
+        "Guangyu Huang",
+        "Canyu Zhao",
+        "Jinchuan Shi",
+        "Haokai Zhang",
+        "Hao Chen",
+        "Chunhua Shen"
+      ],
+      "url": "https://arxiv.org/abs/2611.33925v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.34130",
+      "version": "2611.34130v1",
+      "title": "WorldPhy: Benchmarking Fine-Grained Physical Plausibility of World Models in Robotics",
+      "published": "2026-11-25T10:30:48Z",
+      "updated": "2026-11-25T10:30:48Z",
+      "authors": [
+        "Ziyuan Chu",
+        "Mingzhi Zheng",
+        "Kaiyue Zhang",
+        "Jinan Zhang",
+        "Linchao Zhu"
+      ],
+      "url": "https://arxiv.org/abs/2611.34130v1",
+      "topics": [
+        "world-models"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.34914",
+      "version": "2611.34914v1",
+      "title": "Cairn: Object-Centric 3D Trajectory Priors for Steering Frozen VLAs",
+      "published": "2026-11-25T18:57:29Z",
+      "updated": "2026-11-25T18:57:29Z",
+      "authors": [
+        "Agelos Kratimenos",
+        "Kostas Daniilidis",
+        "Evangelos Chatzipantazis"
+      ],
+      "url": "https://arxiv.org/abs/2611.34914v1",
+      "topics": [
+        "robotics"
+      ],
+      "announcementDate": "2026-11-26"
+    },
+    {
+      "id": "2611.34624",
+      "version": "2611.34624v1",
+      "title": "HoMe: Toward Practical Harness Optimization of Memory Systems for AI Assistants",
+      "published": "2026-11-25T16:11:53Z",
+      "updated": "2026-11-25T16:11:53Z",
+      "authors": [
+        "Yifei Xu",
+        "Li Yu",
+        "Zhaoyang Liu",
+        "Ce Wang",
+        "Sen Huang",
+        "Yanyan Shen",
+        "Yun Lin",
+        "Linpeng Huang",
+        "Hong Mei"
+      ],
+      "url": "https://arxiv.org/abs/2611.34624v1",
+      "topics": [
+        "agent-memory"
+      ],
+      "announcementDate": "2026-11-26"
+    }
+  ],
+  "updates": [
+    {
+      "id": "2611.28732",
+      "version": "2611.28732v2",
+      "title": "Entangle: Scaling Human-Video In-Context World-Action Models across Unseen Tasks and Contexts",
+      "published": "2026-11-21T10:58:36Z",
+      "updated": "2026-11-25T12:43:55Z",
+      "authors": [
+        "Chendong Xiang",
+        "Chengwen Zhang",
+        "Ruowen Zhao",
+        "Zeyuan Wang",
+        "Shuhe Huang",
+        "Rongxu Cui",
+        "Min Zhao",
+        "Fan Bao",
+        "Hengkai Tan",
+        "Jun Zhu"
+      ],
+      "url": "https://arxiv.org/abs/2611.28732v2",
+      "topics": [
+        "world-action-models"
+      ],
+      "announcementDate": "2026-11-26"
+    }
+  ]
+}
